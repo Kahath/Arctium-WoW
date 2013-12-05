@@ -82,10 +82,25 @@ namespace Framework.Network.Packets
             Write<int>(length, count);
         }
 
+        public void WriteRealmLength(byte length)
+        {
+            byte bit = (byte)(length % 2);
+            length /= 2;
+            Write(length, 8);
+            Write(bit);
+        }
+
         public void WriteGuidMask(params byte[] order)
         {
             for (byte i = 0; i < order.Length; i++)
                 Write(GuidBytes[order[i]]);
+        }
+
+        public void WriteGuidMask(ulong guid, params byte[] order)
+        {
+            byte[] temp = BitConverter.GetBytes(guid);
+            for (int i = 0; i < order.Length; i++)
+                Write(temp[order[i]]);
         }
 
         public void WriteGuildGuidMask(params byte[] order)
@@ -111,6 +126,14 @@ namespace Framework.Network.Packets
             for (byte i = 0; i < order.Length; i++)
                 if (GuidBytes[order[i]] != 0)
                     writer.WriteUInt8((byte)(GuidBytes[order[i]] ^ 1));
+        }
+
+        public void WriteGuidBytes(ulong guid, params byte[] order)
+        {
+            byte[] temp = BitConverter.GetBytes(guid);
+            for (byte i = 0; i < order.Length; i++)
+                if (temp[order[i]] != 0)
+                    writer.WriteUInt8((byte)(temp[order[i]] ^ 1));
         }
 
         public void WriteGuildGuidBytes(params byte[] order)

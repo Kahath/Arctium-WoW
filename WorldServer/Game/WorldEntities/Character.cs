@@ -52,6 +52,8 @@ namespace WorldServer.Game.WorldEntities
         public byte ActiveSpecGroup;
         public uint PrimarySpec;
         public uint SecondarySpec;
+        public string PendingInvite;
+        public Group Group;
 
         public Dictionary<ulong, WorldObject> InRangeObjects = new Dictionary<ulong, WorldObject>();
 
@@ -171,6 +173,14 @@ namespace WorldServer.Game.WorldEntities
                 return 0;
 
             return (ActiveSpecGroup == 0 && PrimarySpec != 0) ? PrimarySpec : SecondarySpec;
+        }
+
+        public bool IsInGroup()
+        {
+            if (this.Group != null)
+                return true;
+            else
+                return false;
         }
     }
 }

@@ -209,5 +209,27 @@ namespace Framework.Network.Packets
 
             Seek((int)BaseStream.Length - 1, SeekOrigin.Begin);
         }
+
+        public void WriteHexStringBytes(string data)
+        {
+
+            byte[] arr = new byte[data.Length >> 1];
+
+            for (int i = 0; i < data.Length >> 1; ++i)
+                arr[i] = (byte)((GetHexVal(data[i << 1]) << 4) + (GetHexVal(data[(i << 1) + 1])));
+
+            WriteBytes(arr);
+        }
+
+        public static int GetHexVal(char hex)
+        {
+            int val = (int)hex;
+            //For uppercase A-F letters:
+            //return val - (val < 58 ? 48 : 55);
+            //For lowercase a-f letters:
+            //return val - (val < 58 ? 48 : 87);
+            //Or the two combined, but a bit slower:
+            return val - (val < 58 ? 48 : (val < 97 ? 55 : 87));
+        }
     }
 }

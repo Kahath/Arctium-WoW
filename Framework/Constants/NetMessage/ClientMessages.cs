@@ -94,6 +94,12 @@ namespace Framework.Constants.NetMessage
         MoveDismissVehicle          = 0x1261,
         #endregion
 
+        #region Group
+        GroupInvite = 0x0144,
+        GroupInviteResponse = 0x0DE5,
+        LeaveGroup = 0x1544,
+        #endregion 
+
         TransferInitiate            = 0x4F57,
     }
 }

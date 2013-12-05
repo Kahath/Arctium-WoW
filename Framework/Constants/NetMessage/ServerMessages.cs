@@ -80,6 +80,12 @@ namespace Framework.Constants.NetMessage
         Chat                              = 0x14AC,
         #endregion
 
+        #region Party
+        GroupInvite = 0x09A6,
+        GroupUpdate = 0x01B5,
+        UpgradeAccountInviteFail = 0x1197,
+        #endregion
+
         TransferInitiate                  = 0x4F57,
     }
 }
