@@ -20,6 +20,7 @@ using System;
 using DefaultConsole = System.Console;
 using Framework.ObjectDefines;
 using System.Text;
+using System.IO;
 
 namespace Framework.Logging
 {
@@ -36,6 +37,12 @@ namespace Framework.Logging
         {
             SetLogger(type, text, args);
         }
+
+        public static void Message(LogType type, Exception e)
+        {
+            SetLogger(type, e);
+        }
+
 
         static void SetLogger(LogType type, string text, params object[] args)
         {
@@ -79,6 +86,58 @@ namespace Framework.Logging
                     DefaultConsole.WriteLine(text, args);
                 else
                     DefaultConsole.WriteLine("[" + DateTime.Now.ToLongTimeString() + "] " + text, args);
+            }
+        }
+
+        static void SetLogger(LogType type, Exception e)
+        {
+            DefaultConsole.OutputEncoding = UTF8Encoding.UTF8;
+            string text = e.Message;
+            switch (type)
+            {
+                case LogType.Normal:
+                    DefaultConsole.ForegroundColor = ConsoleColor.Green;
+                    text = e.Message.Insert(0, "System: ");
+                    break;
+                case LogType.Error:
+                    DefaultConsole.ForegroundColor = ConsoleColor.Red;
+                    text = e.Message.Insert(0, "Error: ");
+                    break;
+                case LogType.Dump:
+                    DefaultConsole.ForegroundColor = ConsoleColor.Yellow;
+                    break;
+                case LogType.Init:
+                    DefaultConsole.ForegroundColor = ConsoleColor.Cyan;
+                    break;
+                case LogType.DB:
+                    DefaultConsole.ForegroundColor = ConsoleColor.DarkMagenta;
+                    break;
+                case LogType.Cmd:
+                    DefaultConsole.ForegroundColor = ConsoleColor.Green;
+                    break;
+                case LogType.Debug:
+                    DefaultConsole.ForegroundColor = ConsoleColor.DarkRed;
+                    break;
+                default:
+                    DefaultConsole.ForegroundColor = ConsoleColor.White;
+                    break;
+            }
+
+            if (((Log.ServerType == "World" ? WorldConfig.LogLevel : RealmConfig.LogLevel) & type) == type)
+            {
+                string path = Log.ServerType == "World" ? "World.log" : "Auth.log";
+                if (type.Equals(LogType.Init) | type.Equals(LogType.Default))
+                    DefaultConsole.WriteLine(text);
+                else if (type.Equals(LogType.Dump) || type.Equals(LogType.Cmd))
+                    DefaultConsole.WriteLine(text);
+                else
+                    DefaultConsole.WriteLine("[" + DateTime.Now.ToLongTimeString() + "] " + text);
+
+                text = e.ToString();
+                DefaultConsole.WriteLine(text);
+                StreamWriter writer = new StreamWriter(path, true);
+                writer.WriteLine(text, Encoding.UTF8);
+                writer.Close();
             }
         }
     }

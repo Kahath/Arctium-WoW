@@ -35,6 +35,21 @@ namespace Framework.Network.Packets
             WritePacketHeader(message, isWorldPacket);
         }
 
+        public PacketWriter(ushort opcode, bool isWorldPacket = false)
+            : base(new MemoryStream())
+        {
+            WriteUInt8(0);
+            WriteUInt8(0);
+            WriteUInt8((byte)(0xFF & (ushort)opcode));
+            WriteUInt8((byte)(0xFF & ((ushort)opcode >> 8)));
+
+            if (isWorldPacket)
+            {
+                WriteUInt8(0);
+                WriteUInt8(0);
+            }
+        }
+
         protected void WritePacketHeader(ServerMessage opcode, bool isWorldPacket = false)
         {
             Opcode = opcode;

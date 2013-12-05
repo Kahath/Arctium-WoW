@@ -31,7 +31,7 @@ namespace WorldServer.Game.Chat.Commands
         {
             var pChar = session.Character;
 
-            int objectId = CommandParser.Read<int>(args, 1);
+            int objectId = CommandBase.Read<int>(args, 1);
 
             GameObject gObject = DataMgr.FindGameObject(objectId);
             if (gObject != null)

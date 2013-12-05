@@ -28,7 +28,7 @@ namespace WorldServer.Game.Chat.Commands
         [ChatCommand("fly", "Usage: !fly #state (Turns the fly mode 'on' or 'off')")]
         public static void Fly(string[] args, WorldClass session)
         {
-            var state = CommandParser.Read<string>(args, 1);
+            var state = CommandBase.Read<string>(args, 1);
             var message = state == "on" ? "Fly mode enabled." : "Fly mode disabled.";
 
             ChatMessageValues chatMessage = new ChatMessageValues(0, message);
@@ -54,7 +54,7 @@ namespace WorldServer.Game.Chat.Commands
                 MoveHandler.HandleMoveSetWalkSpeed(ref session);
             else
             {
-                var speed = CommandParser.Read<float>(args, 1);
+                var speed = CommandBase.Read<float>(args, 1);
 
                 if (speed <= 50 && speed > 0)
                 {
@@ -86,7 +86,7 @@ namespace WorldServer.Game.Chat.Commands
                 MoveHandler.HandleMoveSetRunSpeed(ref session);
             else
             {
-                var speed = CommandParser.Read<float>(args, 1);
+                var speed = CommandBase.Read<float>(args, 1);
                 if (speed <= 50 && speed > 0)
                 {
                     chatMessage.Message = "Run speed set to " + speed + "!";
@@ -118,7 +118,7 @@ namespace WorldServer.Game.Chat.Commands
                 MoveHandler.HandleMoveSetSwimSpeed(ref session);
             else
             {
-                var speed = CommandParser.Read<float>(args, 1);
+                var speed = CommandBase.Read<float>(args, 1);
                 if (speed <= 50 && speed > 0)
                 {
                     chatMessage.Message = "Swim speed set to " + speed + "!";
@@ -150,7 +150,7 @@ namespace WorldServer.Game.Chat.Commands
                 MoveHandler.HandleMoveSetFlightSpeed(ref session);
             else
             {
-                var speed = CommandParser.Read<float>(args, 1);
+                var speed = CommandBase.Read<float>(args, 1);
 
                 if (speed <= 50 && speed > 0)
                 {
@@ -185,17 +185,17 @@ namespace WorldServer.Game.Chat.Commands
             {
                 vector = new Vector4()
                 {
-                    X = CommandParser.Read<float>(args, 1),
-                    Y = CommandParser.Read<float>(args, 2),
-                    Z = CommandParser.Read<float>(args, 3),
-                    O = CommandParser.Read<float>(args, 4)
+                    X = CommandBase.Read<float>(args, 1),
+                    Y = CommandBase.Read<float>(args, 2),
+                    Z = CommandBase.Read<float>(args, 3),
+                    O = CommandBase.Read<float>(args, 4)
                 };
 
-                mapId = CommandParser.Read<uint>(args, 5);
+                mapId = CommandBase.Read<uint>(args, 5);
             }
             else
             {
-                string location = CommandParser.Read<string>(args, 1);
+                string location = CommandBase.Read<string>(args, 1);
                 SQLResult result = DB.World.Select("SELECT * FROM teleport_locations WHERE location = ?", location);
 
                 if (result.Count == 0)
@@ -284,7 +284,7 @@ namespace WorldServer.Game.Chat.Commands
         {
             var pChar = session.Character;
 
-            string location = CommandParser.Read<string>(args, 1);
+            string location = CommandBase.Read<string>(args, 1);
             SQLResult result = DB.World.Select("SELECT * FROM teleport_locations WHERE location = ?", location);
 
             ChatMessageValues chatMessage = new ChatMessageValues(0, "");
@@ -312,7 +312,7 @@ namespace WorldServer.Game.Chat.Commands
         {
             var pChar = session.Character;
 
-            string location = CommandParser.Read<string>(args, 1);
+            string location = CommandBase.Read<string>(args, 1);
 
             ChatMessageValues chatMessage = new ChatMessageValues(0, string.Format("Teleport location '{0}' successfully deleted.", location));
 

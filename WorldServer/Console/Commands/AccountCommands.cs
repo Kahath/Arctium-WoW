@@ -21,19 +21,25 @@ using Framework.Logging;
 
 namespace WorldServer.Console.Commands
 {
-    public class AccountCommands : CommandParser
+    public sealed class Account : CommandBase
     {
-        [Command("caccount", "")]
-        public static void CreateAccount(string[] args)
+        [CommandAttribute]
+        public Account()
         {
-            string name = Read<string>(args, 0);
-            string password = Read<string>(args, 1);
+            base.LoadSubCommands(this.GetType());
+        }
+
+        [SubCommandAttribute]
+        public static bool Create(string[] args)
+        {
+            string name = Read<string>(args, 1);
+            string password = Read<string>(args, 2);
 
             if (name == null || password == null)
-                return;
+                return false;
 
-            name = name.ToUpper();
-            password = password.ToUpper();
+            name = name.ToUpper().Trim();
+            password = password.ToUpper().Trim();
 
             SQLResult result = DB.Realms.Select("SELECT * FROM accounts WHERE name = ?", name);
             if (result.Count == 0)
@@ -43,6 +49,8 @@ namespace WorldServer.Console.Commands
             }
             else
                 Log.Message(LogType.Error, "Account {0} already in database", name);
+            return true;
         }
     }
+
 }

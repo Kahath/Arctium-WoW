@@ -32,7 +32,7 @@ namespace WorldServer.Game.Chat.Commands
         {
             var pChar = session.Character;
 
-            int creatureId = CommandParser.Read<int>(args, 1);
+            int creatureId = CommandBase.Read<int>(args, 1);
 
             Creature creature = DataMgr.FindCreature(creatureId);
             if (creature != null)

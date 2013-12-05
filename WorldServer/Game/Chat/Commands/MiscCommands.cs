@@ -62,7 +62,7 @@ namespace WorldServer.Game.Chat.Commands
         [ChatCommand("morph", "Usage: !morph #displayId (Change the current displayId for your own character)")]
         public static void Morph(string[] args, WorldClass session)
         {
-            var displayId = CommandParser.Read<uint>(args, 1);
+            var displayId = CommandBase.Read<uint>(args, 1);
             var pChar = session.Character;
 
             if (pChar != null)

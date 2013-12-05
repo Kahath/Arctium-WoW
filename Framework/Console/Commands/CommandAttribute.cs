@@ -19,16 +19,24 @@ using System;
 
 namespace Framework.Console.Commands
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = true)]
     public sealed class CommandAttribute : Attribute
     {
-        public string Command { get; set; }
-        public string Description { get; set; }
+        /*public string Command { get; set; }
+        public string Description { get; set; }*/
 
-        public CommandAttribute(string command, string description)
+        public CommandAttribute(/*string command, string description*/)
         {
-            Command = command;
-            Description = description;
+            /* Command = command;
+             Description = description;*/
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    public sealed class SubCommandAttribute : Attribute
+    {
+        public SubCommandAttribute()
+        {
         }
     }
 }

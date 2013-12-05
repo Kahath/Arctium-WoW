@@ -46,11 +46,30 @@ namespace WorldServer.Network
             }
         }
 
+        public bool Start(IPHostEntry host, int port)
+        {
+            try
+            {
+                IPAddress ip = host.AddressList[0];
+                listener = new TcpListener(ip, port);
+                listener.Start();
+
+                return true;
+            }
+            catch (SocketException e)
+            {
+                Log.Message(LogType.Error, e);
+                Log.Message();
+
+                return false;
+            }
+        }
+
         public void AcceptConnectionThread()
         {
             new Thread(AcceptConnection).Start();
         }
- 
+
         async void AcceptConnection()
         {
             while (listenSocket)
