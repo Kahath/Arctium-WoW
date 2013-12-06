@@ -4,7 +4,6 @@ using Framework.Network.Packets;
 using Framework.ObjectDefines;
 using WorldServer.Network;
 using Framework.Logging;
-using Framework.Constants;
 using WorldServer.Game.WorldEntities;
 using System.Collections.Generic;
 
@@ -29,7 +28,6 @@ namespace WorldServer.Game.Packets.PacketHandler
 
             PacketWriter writer = new PacketWriter(ServerMessage.GroupInvite);
             BitPack BitPack = new BitPack(writer, pChar.Guid);
-
 
             BitPack.WriteGuidMask(3);
 
@@ -103,11 +101,63 @@ namespace WorldServer.Game.Packets.PacketHandler
             pTarget.Send(ref writer);
         }
 
+        [Opcode(ClientMessage.PromoteToLeader, "17538")]
+        public static void HandleGroupLeaderChange
+            (ref PacketReader packet, WorldClass session)
+        {
+            // unk 
+            packet.Skip(1); // 7F
+            BitUnpack BitUnpack = new BitUnpack(packet);
+            ulong leaderGUID = BitUnpack.GetPackedValue
+                (new byte[] { 6, 7, 0, 3, 2, 5, 4, 1 }, 
+                new byte[] { 5, 7, 1, 6, 2, 4, 0, 3 });
+
+            session.Character.Group.Leader = WorldMgr.GetSession(leaderGUID).Character;
+
+            GroupUpdate(ref session);
+        }
+
+        [Opcode(ClientMessage.GroupLootUpdate, "17538")]
+        public static void HandleGroupLootUpdate
+             (ref PacketReader packet, WorldClass session)
+        {
+            packet.ReadByte();
+            packet.ReadByte();
+            packet.ReadUInt32();
+
+            BitUnpack BitUnpack = new BitUnpack(packet);
+
+            ulong GUID = BitUnpack.GetPackedValue(
+                new byte[] { 4, 0, 7, 3, 2, 6, 5, 1 }, 
+                new byte[] { 4, 7, 6, 3, 5, 1, 2, 0 });
+
+            GroupUpdate(ref session);
+        }
+
+        [Opcode(ClientMessage.GroupMemberMark, "17538")]
+        public static void HandleGroupMemberMark
+             (ref PacketReader packet, WorldClass session)
+        {
+            // unk
+            packet.Skip(1);
+
+            GroupMemberMark mark = (GroupMemberMark)packet.ReadByte();
+            BitUnpack BitUnpack = new BitUnpack(packet);
+            ulong targetGUID = BitUnpack.GetPackedValue
+                (new byte[] { 2, 5, 6, 4, 7, 1, 0, 3 },
+                new byte[] { 2, 6, 4, 3, 5, 7, 1, 0, });
+            session.Character.Group.GetMemberByGuid(targetGUID).GroupMark = mark;
+
+            GroupUpdate(ref session);
+        }
+
         [Opcode(ClientMessage.GroupInviteResponse, "17538")]
         public static void HandleGroupRequestResponse
             (ref PacketReader packet, WorldClass session)
         {
-            packet.Skip(1);
+            // unk
+            packet.Skip(1); // 7F
+
             GroupInviteResponse response = (GroupInviteResponse)packet.ReadByte();
 
             switch (response)
@@ -115,7 +165,6 @@ namespace WorldServer.Game.Packets.PacketHandler
                 case GroupInviteResponse.Accept:
                     {
                         Group group;
-                        ulong unkGUID = 0;
                         var pChar = session.Character;
                         var pLeader = WorldMgr.GetSession(pChar.PendingInvite);
                         pChar.PendingInvite = null;
@@ -125,9 +174,12 @@ namespace WorldServer.Game.Packets.PacketHandler
 
                         if (!pLeader.Character.IsInGroup())
                         {
-                            group = new Group(PartyGUID++, pLeader.Character, pLeader.Character.Name);
+                            group = new Group(PartyGUID++, pLeader.Character);
                             pLeader.Character.Group = group;
                             group.Add(pLeader.Character);
+                            group.LootMethod = GroupLootType.GroupLoot;
+                            group.LootThreshold = GroupLootThreshold.Uncommon;
+                            group.DungeonDifficulty = GroupDungeonDifficulty.FivePlayer;
                         }
                         else
                             group = pLeader.Character.Group;
@@ -138,138 +190,7 @@ namespace WorldServer.Game.Packets.PacketHandler
                         group.Add(pChar);
                         pChar.Group = group;
 
-                        foreach (Character pMember in group.MembersList)
-                        {
-                            PacketWriter writer = new PacketWriter(ServerMessage.GroupUpdate);
-                            BitPack BitPack = new BitPack(writer, pMember.Guid);
-
-                            //unk
-                            writer.WriteUInt32((uint)group.MembersList.Count);
-                            writer.WriteUInt8(0x01);
-                            writer.WriteUInt8(0x00);
-                            writer.WriteUInt8(0x00);
-                            writer.WriteUInt32(0x01); // 1
-
-                            // Leader guid mask
-                            BitPack.WriteGuidMask(group.Leader.Guid, 3);
-                            BitPack.WriteGuidMask(group.Leader.Guid, 6);
-
-                            // Group GUID mask
-                            BitPack.WriteGuidMask(group.Guid, 6);
-                            BitPack.WriteGuidMask(group.Guid, 7);
-                            BitPack.WriteGuidMask(group.Guid, 2);
-                            BitPack.WriteGuidMask(group.Guid, 5);
-                            BitPack.WriteGuidMask(group.Guid, 3);
-
-                            // Leader guid mask
-                            BitPack.WriteGuidMask(group.Leader.Guid, 0);
-                            BitPack.WriteGuidMask(group.Leader.Guid, 5);
-
-                            //unk Must be 1 if Group??
-                            BitPack.Write(1);
-
-                            // Group GUID mask
-                            BitPack.WriteGuidMask(group.Guid, 4);
-
-                            //unk
-                            BitPack.Write(0, 8);
-                            BitPack.Write(0, 8);
-                            BitPack.Write((byte)group.MembersList.Count, 5);
-
-
-                            //unk group flags prolly triggered by unk Must be 1
-                            BitPack.WriteGuidMask(unkGUID, 4);
-                            BitPack.WriteGuidMask(unkGUID, 6);
-                            BitPack.WriteGuidMask(unkGUID, 5);
-                            BitPack.WriteGuidMask(unkGUID, 7);
-                            BitPack.WriteGuidMask(unkGUID, 0);
-                            BitPack.WriteGuidMask(unkGUID, 1);
-                            BitPack.WriteGuidMask(unkGUID, 2);
-                            BitPack.WriteGuidMask(unkGUID, 3);
-
-                            WriteGroupMembersGuidMask(group.GetGroupMembers(pMember), ref BitPack, ref writer, pMember);
-
-                            // unk -- Party Raid?
-                            BitPack.Write(0);
-
-                            // Group GUID mask
-                            BitPack.WriteGuidMask(group.Guid, 1);
-
-                            //unk
-                            BitPack.Write(1); // 1
-
-                            // Leader guid mask
-                            BitPack.WriteGuidMask(group.Leader.Guid, 4);
-
-                            // Group GUID mask
-                            BitPack.WriteGuidMask(group.Guid, 0);
-
-                            // Leader guid mask
-                            BitPack.WriteGuidMask(group.Leader.Guid, 2);
-                            BitPack.WriteGuidMask(group.Leader.Guid, 7);
-                            BitPack.WriteGuidMask(group.Leader.Guid, 1);
-
-                            BitPack.Flush();
-
-                            WriteGroupMembersGuidBytes(group.GetGroupMembers(pMember), ref BitPack, ref writer, pMember);
-
-                            // Group Loot Threshold
-                            writer.WriteUInt8((byte)GroupLootThreshold.Uncommon);
-
-                            // unk flags triggered by unk Must be 1
-                            BitPack.WriteGuidBytes(unkGUID, 5);
-                            BitPack.WriteGuidBytes(unkGUID, 4);
-
-                            // Group Loot Type
-                            writer.WriteUInt8((byte)GroupLootType.GroupLoot);
-
-                            // unk flags triggered by unk Must be 1
-                            BitPack.WriteGuidBytes(unkGUID, 3);
-                            BitPack.WriteGuidBytes(unkGUID, 1);
-                            BitPack.WriteGuidBytes(unkGUID, 0);
-                            BitPack.WriteGuidBytes(unkGUID, 6);
-                            BitPack.WriteGuidBytes(unkGUID, 2);
-                            BitPack.WriteGuidBytes(unkGUID, 7);
-
-                            // Group GUID Data
-                            BitPack.WriteGuidBytes(group.Guid, 2);
-
-                            //unk
-                            writer.WriteUInt32(0x01); // 3
-
-                            // Dungeon Difficulty -- UInt32 wtf?
-                            writer.WriteUInt32((uint)GroupDungeonDifficulty.FivePlayer);
-
-                            // Group GUID Data
-                            BitPack.WriteGuidBytes(group.Guid, 5);
-                            BitPack.WriteGuidBytes(group.Guid, 3);
-                            BitPack.WriteGuidBytes(group.Guid, 1);
-                            BitPack.WriteGuidBytes(group.Guid, 0);
-
-                            //Leader GUID
-                            BitPack.WriteGuidBytes(group.Leader.Guid, 7);
-                            BitPack.WriteGuidBytes(group.Leader.Guid, 2);
-                            BitPack.WriteGuidBytes(group.Leader.Guid, 0);
-                            BitPack.WriteGuidBytes(group.Leader.Guid, 1);
-
-                            // Group GUID Data
-                            BitPack.WriteGuidBytes(group.Guid, 7);
-
-                            //Leader GUID
-                            BitPack.WriteGuidBytes(group.Leader.Guid, 6);
-                            BitPack.WriteGuidBytes(group.Leader.Guid, 4);
-                            BitPack.WriteGuidBytes(group.Leader.Guid, 5);
-
-                            // Group GUID Data
-                            BitPack.WriteGuidBytes(group.Guid, 6);
-                            BitPack.WriteGuidBytes(group.Guid, 4);
-
-                            //Leader GUID
-                            BitPack.WriteGuidBytes(group.Leader.Guid, 3);
-
-                            //session.Send(ref writer);
-                            WorldMgr.GetSession(pMember.Guid).Send(ref writer);
-                        }
+                        GroupUpdate(ref session);
 
                         break;
                     }
@@ -357,6 +278,144 @@ namespace WorldServer.Game.Packets.PacketHandler
 
                     hit = true;
                 }
+            }
+        }
+
+        static void GroupUpdate(ref WorldClass session)
+        {
+            Group group = session.Character.Group;
+            ulong unkGUID = 0;
+            foreach (Character pMember in group.MembersList)
+            {
+                PacketWriter writer = new PacketWriter(ServerMessage.GroupUpdate);
+                BitPack BitPack = new BitPack(writer, pMember.Guid);
+
+                //unk
+                writer.WriteUInt32((uint)group.MembersList.Count);
+                writer.WriteUInt8(0x01);
+                writer.WriteUInt8(0x00);
+                writer.WriteUInt8(0x00);
+                writer.WriteUInt32(0x01); // 1
+
+                // Leader guid mask
+                BitPack.WriteGuidMask(group.Leader.Guid, 3);
+                BitPack.WriteGuidMask(group.Leader.Guid, 6);
+
+                // Group GUID mask
+                BitPack.WriteGuidMask(group.Guid, 6);
+                BitPack.WriteGuidMask(group.Guid, 7);
+                BitPack.WriteGuidMask(group.Guid, 2);
+                BitPack.WriteGuidMask(group.Guid, 5);
+                BitPack.WriteGuidMask(group.Guid, 3);
+
+                // Leader guid mask
+                BitPack.WriteGuidMask(group.Leader.Guid, 0);
+                BitPack.WriteGuidMask(group.Leader.Guid, 5);
+
+                //unk Must be 1 if Group??
+                BitPack.Write(1);
+
+                // Group GUID mask
+                BitPack.WriteGuidMask(group.Guid, 4);
+
+                //unk
+                BitPack.Write(0, 8);
+                BitPack.Write(0, 8);
+                BitPack.Write((byte)group.MembersList.Count, 5);
+
+
+                //unk group flags prolly triggered by unk Must be 1
+                BitPack.WriteGuidMask(unkGUID, 4);
+                BitPack.WriteGuidMask(unkGUID, 6);
+                BitPack.WriteGuidMask(unkGUID, 5);
+                BitPack.WriteGuidMask(unkGUID, 7);
+                BitPack.WriteGuidMask(unkGUID, 0);
+                BitPack.WriteGuidMask(unkGUID, 1);
+                BitPack.WriteGuidMask(unkGUID, 2);
+                BitPack.WriteGuidMask(unkGUID, 3);
+
+                WriteGroupMembersGuidMask(group.GetGroupMembers(pMember), ref BitPack, ref writer, pMember);
+
+                // unk -- Party Raid?
+                BitPack.Write(0);
+
+                // Group GUID mask
+                BitPack.WriteGuidMask(group.Guid, 1);
+
+                //unk
+                BitPack.Write(1); // 1
+
+                // Leader guid mask
+                BitPack.WriteGuidMask(group.Leader.Guid, 4);
+
+                // Group GUID mask
+                BitPack.WriteGuidMask(group.Guid, 0);
+
+                // Leader guid mask
+                BitPack.WriteGuidMask(group.Leader.Guid, 2);
+                BitPack.WriteGuidMask(group.Leader.Guid, 7);
+                BitPack.WriteGuidMask(group.Leader.Guid, 1);
+
+                BitPack.Flush();
+
+                WriteGroupMembersGuidBytes(group.GetGroupMembers(pMember), ref BitPack, ref writer, pMember);
+
+                // Group Loot Threshold
+                writer.WriteUInt8((byte)group.LootThreshold);
+
+                // unk flags triggered by unk Must be 1
+                BitPack.WriteGuidBytes(unkGUID, 5);
+                BitPack.WriteGuidBytes(unkGUID, 4);
+
+                // Group Loot Type
+                writer.WriteUInt8((byte)group.LootMethod);
+
+                // unk flags triggered by unk Must be 1
+                BitPack.WriteGuidBytes(unkGUID, 3);
+                BitPack.WriteGuidBytes(unkGUID, 1);
+                BitPack.WriteGuidBytes(unkGUID, 0);
+                BitPack.WriteGuidBytes(unkGUID, 6);
+                BitPack.WriteGuidBytes(unkGUID, 2);
+                BitPack.WriteGuidBytes(unkGUID, 7);
+
+                // Group GUID Data
+                BitPack.WriteGuidBytes(group.Guid, 2);
+
+                //unk
+                writer.WriteUInt32(0x01); // 3
+
+                // Dungeon Difficulty -- UInt32 wtf?
+                writer.WriteUInt32((uint)group.DungeonDifficulty);
+
+                // Group GUID Data
+                BitPack.WriteGuidBytes(group.Guid, 5);
+                BitPack.WriteGuidBytes(group.Guid, 3);
+                BitPack.WriteGuidBytes(group.Guid, 1);
+                BitPack.WriteGuidBytes(group.Guid, 0);
+
+                //Leader GUID
+                BitPack.WriteGuidBytes(group.Leader.Guid, 7);
+                BitPack.WriteGuidBytes(group.Leader.Guid, 2);
+                BitPack.WriteGuidBytes(group.Leader.Guid, 0);
+                BitPack.WriteGuidBytes(group.Leader.Guid, 1);
+
+                // Group GUID Data
+                BitPack.WriteGuidBytes(group.Guid, 7);
+
+                //Leader GUID
+                BitPack.WriteGuidBytes(group.Leader.Guid, 6);
+                BitPack.WriteGuidBytes(group.Leader.Guid, 4);
+                BitPack.WriteGuidBytes(group.Leader.Guid, 5);
+
+                // Group GUID Data
+                BitPack.WriteGuidBytes(group.Guid, 6);
+                BitPack.WriteGuidBytes(group.Guid, 4);
+
+                //Leader GUID
+                BitPack.WriteGuidBytes(group.Leader.Guid, 3);
+
+                //session.Send(ref writer);
+                WorldMgr.GetSession(pMember.Guid).Send(ref writer);
             }
         }
     }

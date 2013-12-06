@@ -9,15 +9,16 @@ namespace WorldServer.Game.WorldEntities
         public List<Character> MembersList = new List<Character>(5);
         public ulong Guid { get; private set; }
         public Character Leader { get; set; }
-        public string LeaderName { get; set; }
+        //public string LeaderName { get; set; }
         public GroupLootType LootMethod { get; set; }
         public GroupLootThreshold LootThreshold { get; set; }
+        public GroupDungeonDifficulty DungeonDifficulty { get; set; }
 
-        public Group(ulong groupGuid, Character leader, string leaderName)
+        public Group(ulong groupGuid, Character leader/*, string leaderName*/)
         {
             this.Guid = groupGuid;
             this.Leader = leader;
-            this.LeaderName = leaderName;
+            //this.LeaderName = leaderName;
             //this.Leader.Group = this;
             //Add(leader);
         }
@@ -37,7 +38,7 @@ namespace WorldServer.Game.WorldEntities
         {
             MembersList.Clear();
             this.Leader = null;
-            this.LeaderName = null;
+            //this.LeaderName = null;
         }
 
         public IEnumerable<Character> GetGroupMembers(Character pChar)
@@ -56,6 +57,14 @@ namespace WorldServer.Game.WorldEntities
             if (MembersList.Count == 5)
                 return true;
             return false;
+        }
+
+        public Character GetMemberByGuid(ulong GUID)
+        {
+            foreach (Character c in MembersList)
+                if (c.Guid == GUID)
+                    return c;
+            return null;
         }
     }
 }

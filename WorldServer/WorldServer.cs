@@ -68,7 +68,7 @@ namespace WorldServer
 
             WorldClass.world = new WorldNetwork();
 
-            /* if (WorldClass.world.Start(WorldConfig.BindIP, (int)WorldConfig.BindPort))
+             if (WorldClass.world.Start(WorldConfig.BindIP, (int)WorldConfig.BindPort))
              {
                  WorldClass.world.AcceptConnectionThread();
                  Log.Message(LogType.Normal, "WorldServer listening on {0} port {1}.", WorldConfig.BindIP, WorldConfig.BindPort);
@@ -76,8 +76,8 @@ namespace WorldServer
 
                  PacketManager.DefineOpcodeHandler();
                  ChatCommandParser.DefineChatCommands();
-             }*/
-            if (WorldClass.world.Start(Dns.Resolve(Dns.GetHostName()), (int)WorldConfig.BindPort))
+             }
+            /*if (WorldClass.world.Start(Dns.Resolve(Dns.GetHostName()), (int)WorldConfig.BindPort))
             {
                 WorldClass.world.AcceptConnectionThread();
                 Log.Message(LogType.Normal, "WorldServer listening on {0} port {1}.", WorldConfig.BindIP, WorldConfig.BindPort);
@@ -85,7 +85,7 @@ namespace WorldServer
 
                 PacketManager.DefineOpcodeHandler();
                 ChatCommandParser.DefineChatCommands();
-            }
+            }*/
             else
             {
                 Log.Message(LogType.Error, "Server couldn't be started: ");

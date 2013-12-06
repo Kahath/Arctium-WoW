@@ -98,6 +98,10 @@ namespace Framework.Constants.NetMessage
         GroupInvite = 0x0144,
         GroupInviteResponse = 0x0DE5,
         LeaveGroup = 0x1544,
+        GroupMemberMark = 0x15E4,
+        GroupMemberRole = 0x04C9,
+        PromoteToLeader = 0x11C1,
+        GroupLootUpdate = 0x15E9,
         #endregion 
 
         TransferInitiate            = 0x4F57,

@@ -43,4 +43,9 @@ namespace Framework.Constants
         Decline = 0x00,
     };
 
+    public enum GroupMemberMark : byte
+    {
+        Skull = 0x07,
+    };
+
 }

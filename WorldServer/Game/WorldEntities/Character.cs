@@ -54,6 +54,7 @@ namespace WorldServer.Game.WorldEntities
         public uint SecondarySpec;
         public string PendingInvite;
         public Group Group;
+        public GroupMemberMark GroupMark;
 
         public Dictionary<ulong, WorldObject> InRangeObjects = new Dictionary<ulong, WorldObject>();
 
