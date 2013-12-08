@@ -14,6 +14,26 @@ namespace WorldServer.Game.Packets.PacketHandler
     {
         static ulong PartyGUID = 1;
 
+        [Opcode(ClientMessage.GroupPromoteLeader, "17538")]
+        public static void HandleGroupLeaderChange
+            (ref PacketReader packet, WorldClass session)
+        {
+            // unk 
+            packet.Skip(1); // 7F
+
+            BitUnpack BitUnpack = new BitUnpack(packet);
+            ulong leaderGUID = BitUnpack.GetPackedValue(
+                new byte[] { 5, 1, 7, 0, 4, 6, 2, 3 },
+                new byte[] { 5, 7, 1, 6, 2, 4, 0, 3 });
+
+            var newLeader = WorldMgr.GetSession(leaderGUID);
+
+            if (!(newLeader == null))
+                session.Character.Group.Leader = newLeader.Character;
+
+            GroupUpdate(session.Character.Group);
+        }
+        
         [Opcode(ClientMessage.GroupMemberRole, "17538")]
         public static void HandleGroupMemberRole(
             ref PacketReader packet, WorldClass session)
