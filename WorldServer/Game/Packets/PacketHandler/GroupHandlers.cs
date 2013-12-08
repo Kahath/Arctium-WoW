@@ -20,7 +20,7 @@ namespace WorldServer.Game.Packets.PacketHandler
             var pChar = session.Character;
             BitUnpack BitUnpack = new BitUnpack(packet);
             packet.Skip(11);
-            BitUnpack.GetBits<byte>(5);
+            BitUnpack.GetBits<byte>(4);
             var length = BitUnpack.GetBits<byte>(6);
             var message = packet.ReadString(length);
             var pTarget = WorldMgr.GetSession(message);
