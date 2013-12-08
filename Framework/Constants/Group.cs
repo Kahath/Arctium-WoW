@@ -54,4 +54,12 @@ namespace Framework.Constants
         Decline = 0x00,
     };
 
+    public enum GroupMemberRole : byte
+    {
+        None = 0x00,
+        Tank = 0x02,
+        Healer = 0x04,
+        Damage = 0x08
+    };
+
 }

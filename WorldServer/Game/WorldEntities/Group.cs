@@ -32,6 +32,7 @@ namespace WorldServer.Game.WorldEntities
         {
             Members.Remove(pChar);
             pChar.Group = null;
+            pChar.GroupRole = GroupMemberRole.None;
             if (pChar == this.Leader)
             {
                 if (this.Members.Count > 1)

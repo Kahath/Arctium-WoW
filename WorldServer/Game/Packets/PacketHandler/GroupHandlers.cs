@@ -14,6 +14,25 @@ namespace WorldServer.Game.Packets.PacketHandler
     {
         static ulong PartyGUID = 1;
 
+        [Opcode(ClientMessage.GroupMemberRole, "17538")]
+        public static void HandleGroupMemberRole(
+            ref PacketReader packet, WorldClass session)
+        {
+            // unk
+            packet.Skip(1); // 7F
+
+            var groupRole = (GroupMemberRole)packet.ReadUInt32();
+            BitUnpack BitUnpack = new BitUnpack(packet);
+
+            ulong GUID = BitUnpack.GetPackedValue(
+                new byte[] { 4, 0, 2, 7, 5, 6, 1, 3 },
+                new byte[] { 4, 6, 2, 5, 3, 7, 0, 1 });
+
+            WorldMgr.GetSession(GUID).Character.GroupRole = (GroupMemberRole)groupRole;
+
+            GroupUpdate(session.Character.Group);
+        }
+
         [Opcode(ClientMessage.GroupLeave, "17538")]
         public static void HandleGroupLeave(
             ref PacketReader packet, WorldClass session)
