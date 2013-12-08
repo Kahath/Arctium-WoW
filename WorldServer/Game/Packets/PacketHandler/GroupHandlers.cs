@@ -25,7 +25,7 @@ namespace WorldServer.Game.Packets.PacketHandler
             BitUnpack BitUnpack = new BitUnpack(packet);
 
             ulong GUID = BitUnpack.GetPackedValue(
-                new byte[] { 4, 0, 2, 7, 5, 6, 1, 3 },
+                new byte[] { 0, 5, 2, 4, 7, 3, 1, 6 },
                 new byte[] { 4, 6, 2, 5, 3, 7, 0, 1 });
 
             WorldMgr.GetSession(GUID).Character.GroupRole = (GroupMemberRole)groupRole;
