@@ -6,56 +6,84 @@ namespace WorldServer.Game.WorldEntities
 {
     public class Group
     {
-        public List<Character> MembersList = new List<Character>(5);
+        public List<Character> Members = new List<Character>(5);
         public ulong Guid { get; private set; }
         public Character Leader { get; set; }
-        public string LeaderName { get; set; }
         public GroupLootType LootMethod { get; set; }
         public GroupLootThreshold LootThreshold { get; set; }
+        public GroupDungeonDifficulty DungeonDifficulty { get; set; }
+        public GroupType Type { get; set; }
+        public uint counter = 0;
 
-        public Group(ulong groupGuid, Character leader, string leaderName)
+        public Group(ulong groupGuid, Character leader)
         {
             this.Guid = groupGuid;
             this.Leader = leader;
-            this.LeaderName = leaderName;
-            //this.Leader.Group = this;
-            //Add(leader);
+            Add(leader);
         }
 
         public void Add(Character pChar)
         {
-            MembersList.Add(pChar);
-            //pChar.Group = this;
+            Members.Add(pChar);
+            pChar.Group = this;
         }
 
-        public void Remove(Character pChar)
+        public bool Remove(Character pChar)
         {
-            MembersList.Remove(pChar);
+            Members.Remove(pChar);
+            pChar.Group = null;
+            if (pChar == this.Leader)
+            {
+                if (this.Members.Count > 1)
+                {
+                    this.Leader = GetNewRandomLeader();
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public Character GetNewRandomLeader()
+        {
+            return Members[new Random().Next(Members.Count)];
         }
 
         public void Disband()
         {
-            MembersList.Clear();
+            Members.Clear();
             this.Leader = null;
-            this.LeaderName = null;
+        }
+
+        public IEnumerable<Character> GetGroupMembers()
+        {
+            foreach (Character c in Members)
+                yield return c;
         }
 
         public IEnumerable<Character> GetGroupMembers(Character pChar)
         {
-            foreach (Character c in MembersList)
+            foreach (Character c in Members)
             {
                 if (c != pChar)
                     yield return c;
-                //System.Console.WriteLine(c.Name);
             }
 
         }
 
         public bool IsFull()
         {
-            if (MembersList.Count == 5)
+            if (Members.Count == 5)
                 return true;
             return false;
+        }
+
+        public Character GetMemberByGuid(ulong GUID)
+        {
+            foreach (Character c in Members)
+                if (c.Guid == GUID)
+                    return c;
+            return null;
         }
     }
 }

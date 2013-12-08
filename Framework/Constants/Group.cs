@@ -2,6 +2,17 @@
 
 namespace Framework.Constants
 {
+    public enum GroupType
+    {
+        Normal = 0x00,
+        BG = 0x01,
+        Raid = 0x02,
+        BGRaid = BG | Raid,       // mask
+        Unk1 = 0x04,
+        LFG = 0x08,
+        Leave = 0x10, //leave/change group?, I saw this flag when leaving group and after leaving BG while in group
+    };
+    
     public enum GroupLootType : byte
     {
         FreeForAll = 0x00,
