@@ -33,6 +33,38 @@ namespace WorldServer.Game.Packets.PacketHandler
 
             GroupUpdate(session.Character.Group);
         }
+
+        [Opcode(ClientMessage.GroupLootUpdate, "17538")]
+        public static void HandleGroupLootUpdate
+             (ref PacketReader packet, WorldClass session)
+        {
+            // unk
+            packet.Skip(1); // 7F
+
+            session.Character.Group.LootMethod = (GroupLootMethod)packet.ReadByte();
+            session.Character.Group.LootThreshold = (GroupLootThreshold)packet.ReadUInt32();
+
+            BitUnpack BitUnpack = new BitUnpack(packet);
+
+            ulong GUID = BitUnpack.GetPackedValue(
+                new byte[] { 0, 2, 5, 3, 6, 7, 4, 1 },
+                new byte[] { 4, 7, 6, 3, 5, 1, 2, 0 });
+
+            Log.Message(LogType.Error, "GUID: {0}", GUID);
+            var pChar = WorldMgr.GetSession(GUID);
+
+            if (!(pChar == null))
+            {
+                session.Character.Group.LooterGUID = pChar.Character.Guid;
+            }
+            else if (session.Character.Group.LootMethod != GroupLootMethod.MasterLoot)
+            {
+                session.Character.Group.LooterGUID = 0;
+            }
+
+
+            GroupUpdate(session.Character.Group);
+        }
         
         [Opcode(ClientMessage.GroupMemberRole, "17538")]
         public static void HandleGroupMemberRole(
@@ -243,7 +275,7 @@ namespace WorldServer.Game.Packets.PacketHandler
 
         static void GroupUpdate(Group group, ulong unkGUID = 0)
         {
-
+            group.counter++;
             foreach (Character pMember in group.Members)
             {
                 if (!(group.Members.Count > 1))
@@ -257,7 +289,7 @@ namespace WorldServer.Game.Packets.PacketHandler
                 BitPack BitPack = new BitPack(writer, pMember.Guid);
 
                 //unk
-                writer.WriteUInt32(group.counter++);
+                writer.WriteUInt32(group.counter);
                 writer.WriteUInt8(0x01);
                 writer.WriteUInt8(0x00);
                 writer.WriteUInt8((byte)group.Type);
@@ -281,8 +313,8 @@ namespace WorldServer.Game.Packets.PacketHandler
                 //unk
                 BitPack.Write((byte)group.Members.Count, 21);
 
-                //unk
-                BitPack.WriteGuidMask(unkGUID, 4, 6, 5, 7, 0, 1, 2, 3);
+                // Looter GUID
+                BitPack.WriteGuidMask(group.LooterGUID, 4, 6, 5, 7, 0, 1, 2, 3);
 
                 WriteGroupMembersGuidMask(group.GetGroupMembers(pMember), ref BitPack, ref writer, pMember);
 
@@ -311,14 +343,14 @@ namespace WorldServer.Game.Packets.PacketHandler
                 // Group Loot Threshold
                 writer.WriteUInt8((byte)group.LootThreshold);
 
-                // unk
-                BitPack.WriteGuidBytes(unkGUID, 5, 4);
+                // Looter GUID
+                BitPack.WriteGuidBytes(group.LooterGUID, 5, 4);
 
                 // Group Loot Type
                 writer.WriteUInt8((byte)group.LootMethod);
 
-                // unk
-                BitPack.WriteGuidBytes(unkGUID, 3, 1, 0, 6, 2, 7);
+                // Looter GUID
+                BitPack.WriteGuidBytes(group.LooterGUID, 3, 1, 0, 6, 2, 7);
 
                 // Group GUID Data
                 BitPack.WriteGuidBytes(group.Guid, 2);

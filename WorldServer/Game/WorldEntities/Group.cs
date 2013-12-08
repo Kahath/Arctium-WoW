@@ -9,7 +9,8 @@ namespace WorldServer.Game.WorldEntities
         public List<Character> Members = new List<Character>(5);
         public ulong Guid { get; private set; }
         public Character Leader { get; set; }
-        public GroupLootType LootMethod { get; set; }
+        public ulong LooterGUID { get; set; }
+        public GroupLootMethod LootMethod { get; set; }
         public GroupLootThreshold LootThreshold { get; set; }
         public GroupDungeonDifficulty DungeonDifficulty { get; set; }
         public GroupType Type { get; set; }

@@ -31,6 +31,15 @@ namespace Framework.Constants
         Epic = 0x04
     };
 
+    public enum GroupLootMethod : byte
+    {
+        FreeForAll = 0x00,
+        RoundRobin = 0x01,
+        MasterLoot = 0x02,
+        GroupLoot = 0x03,
+        NeedBeforeGreed = 0x04,
+    };
+
     public enum GroupDungeonDifficulty : uint
     {
         None = 0x00,
