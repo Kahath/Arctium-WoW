@@ -50,7 +50,6 @@ namespace WorldServer.Game.Packets.PacketHandler
                 new byte[] { 0, 2, 5, 3, 6, 7, 4, 1 },
                 new byte[] { 4, 7, 6, 3, 5, 1, 2, 0 });
 
-            Log.Message(LogType.Error, "GUID: {0}", GUID);
             var pChar = WorldMgr.GetSession(GUID);
 
             if (!(pChar == null))

@@ -12,15 +12,6 @@ namespace Framework.Constants
         LFG = 0x08,
         Leave = 0x10, //leave/change group?, I saw this flag when leaving group and after leaving BG while in group
     };
-    
-    public enum GroupLootType : byte
-    {
-        FreeForAll = 0x00,
-        RoundRobin = 0x01,
-        MasterLoot = 0x02,
-        GroupLoot = 0x03,
-        NeedBeforeGreed = 0x04,
-    };
 
     public enum GroupLootThreshold : byte
     {
