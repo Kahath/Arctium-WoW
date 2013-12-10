@@ -6,24 +6,24 @@ using WorldServer.Network;
 using Framework.Logging;
 using WorldServer.Game.WorldEntities;
 using System.Collections.Generic;
+using System;
+using Framework.Database;
 
 namespace WorldServer.Game.Packets.PacketHandler
 {
     public class GroupHandler : Globals
     {
         static ulong PartyGUID = 1;
-
         [Opcode(ClientMessage.GroupInvite, "17538")]
         public static void HandleGroupRequest(ref PacketReader packet, WorldClass session)
         {
             var pChar = session.Character;
             BitUnpack BitUnpack = new BitUnpack(packet);
             packet.Skip(11);
-            BitUnpack.GetBits<byte>(5);
+            BitUnpack.GetBits<byte>(4);
             var length = BitUnpack.GetBits<byte>(6);
             var message = packet.ReadString(length);
             var pTarget = WorldMgr.GetSession(message);
-            //ulong unkGUID = 0;
             string Realm = "Outland"; // hardcoded atm
 
             PacketWriter writer = new PacketWriter(ServerMessage.GroupInvite);
@@ -34,16 +34,10 @@ namespace WorldServer.Game.Packets.PacketHandler
             // upk 
             BitPack.Write(1);
 
-            BitPack.WriteGuidMask(5);
-            BitPack.WriteGuidMask(7);
-            BitPack.WriteGuidMask(2);
-            BitPack.WriteGuidMask(0);
-            //BitPack.Write(1);
+            BitPack.WriteGuidMask(5, 7, 2, 0);
 
             // unk
-            BitPack.Write(0, 8);
-            BitPack.Write(0, 8);
-            BitPack.Write(0, 6);
+            BitPack.Write(0, 22);
 
             // Char name Length
             BitPack.Write((byte)pChar.Name.Length, 6);
@@ -57,29 +51,21 @@ namespace WorldServer.Game.Packets.PacketHandler
             BitPack.Write(0);
             BitPack.Write(0);
 
-            //BitPack.Write(0, 4);
             BitPack.WriteRealmLength((byte)Realm.Length); // 9 bit
-            //writer.WriteUInt8(0x0E);
 
-            BitPack.WriteGuidMask(6);
-            BitPack.WriteGuidMask(2);
+            BitPack.WriteGuidMask(6, 2);
 
             // unk
             BitPack.Write(0, 5);
 
             BitPack.Flush();
 
-            //writer.WriteUInt8(0x80);
-
             // unk
             writer.WriteUInt32(0);
 
             BitPack.WriteGuidBytes(6);
             writer.WriteString(Realm);
-            BitPack.WriteGuidBytes(1);
-            BitPack.WriteGuidBytes(2);
-            // writer.WriteUInt8(0xF2);
-            // writer.WriteUInt8(0xBB);
+            BitPack.WriteGuidBytes(1, 2);
 
             // unk
             writer.WriteUInt32(0);
@@ -87,12 +73,8 @@ namespace WorldServer.Game.Packets.PacketHandler
             writer.WriteString(pChar.Name);
             BitPack.WriteGuidBytes(0);
             writer.WriteUInt32(0x00);
-            BitPack.WriteGuidBytes(7);
-            BitPack.WriteGuidBytes(3);
-            BitPack.WriteGuidBytes(5);
-            BitPack.WriteGuidBytes(4);
+            BitPack.WriteGuidBytes(7, 3, 5, 4);
 
-            //writer.WriteStringBytes("FC150500000405A205EC0700000000");
             // unk
             writer.WriteHexStringBytes("EC0700000000");
 
@@ -101,37 +83,172 @@ namespace WorldServer.Game.Packets.PacketHandler
             pTarget.Send(ref writer);
         }
 
-        [Opcode(ClientMessage.PromoteToLeader, "17538")]
+        [Opcode(ClientMessage.GroupUninvite, "17538")]
+        public static void HandleGroupUninvite(
+            ref PacketReader packet, WorldClass session)
+        {
+            bool[] guidMask = new bool[8];
+            packet.Skip(1);
+
+            BitUnpack BitUnpack = new BitUnpack(packet);
+
+            guidMask[0] = BitUnpack.GetBit();
+
+            BitUnpack.GetBits<byte>(8);
+
+            for (int i = 1; i < 8; i++)
+                guidMask[i] = BitUnpack.GetBit();
+
+            ulong GUID = BitUnpack.GetPackedValue(guidMask,
+                new byte[] { 3, 4, 1, 7, 2, 0, 5, 6 },
+                new byte[] { 0, 4, 5, 7, 2, 3, 1, 6 });
+
+            session.Character.Group.Uninvite(GUID);
+        }
+
+        [Opcode(ClientMessage.GroupChangeRaidDifficulty, "17538")]
+        public static void HandleGroupChangeRaidDifficulty(
+            ref PacketReader packet, WorldClass session)
+        {
+            //session.Character.Group.RaidDifficulty = (GroupDungeonDifficulty)packet.ReadUInt32();
+            session.Character.Group.ChangeGroupRaidDifficulty((GroupDungeonDifficulty)packet.ReadUInt32());
+
+            session.Character.Group.Update();
+        }
+
+        [Opcode(ClientMessage.GroupMoveRaidMember, "17538")]
+        public static void HandleGroupMoveRaidMember(
+            ref PacketReader packet, WorldClass session)
+        {
+            packet.Skip(1);
+            var group = packet.ReadByte();
+
+            BitUnpack BitUnpack = new BitUnpack(packet);
+
+            ulong GUID = BitUnpack.GetPackedValue(
+                new byte[] { 3, 4, 2, 5, 1, 6, 7, 0 },
+                new byte[] { 6, 3, 7, 5, 1, 4, 2, 0 });
+
+            var pSession = WorldMgr.GetSession(GUID);
+
+            if (pSession == null)
+                return;
+
+            pSession.Character.Group.ChangeRaidGroup(pSession.Character.Guid, (GroupRaidGroups)group);
+            session.Character.Group.Update();
+        }
+
+        [Opcode(ClientMessage.GroupPromoteAssist, "17538")]
+        public static void HandleGroupRaidRole(
+            ref PacketReader packet, WorldClass session)
+        {
+            bool[] guidMask = new bool[8];
+            packet.Skip(1);
+            BitUnpack BitUnpack = new BitUnpack(packet);
+
+            for(int i = 0; i < 4; i++)
+                guidMask[i] = BitUnpack.GetBit();
+
+            byte raidRole = (byte)(BitUnpack.GetBit() ? 1 : 0);
+
+            for (int i = 4; i < 8; i++)
+                guidMask[i] = BitUnpack.GetBit();
+
+
+            ulong GUID = BitUnpack.GetPackedValue(guidMask,
+                new byte[] { 7, 5, 4, 1, 6, 3, 0, 2 },
+                new byte[] { 1, 2, 7, 3, 4, 5, 0, 6 });
+
+            Log.Message(LogType.Error, "{0}", GUID);
+
+            var pSession = WorldMgr.GetSession(GUID);
+
+            if (pSession == null)
+                return;
+
+            pSession.Character.Group.ChangeRaidRole(pSession.Character.Guid, raidRole);
+
+            session.Character.Group.Update();
+        }
+
+        [Opcode(ClientMessage.GroupChangeDungeonDifficulty, "17538")]
+        public static void HandleGroupDifficulty(
+            ref PacketReader packet, WorldClass session)
+        {
+            //session.Character.Group.DungeonDifficulty = (GroupDungeonDifficulty)packet.ReadUInt32();
+            session.Character.Group.ChangeGroupDungeonDifficulty((GroupDungeonDifficulty)packet.ReadUInt32());
+            session.Character.Group.Update();
+        }
+
+        [Opcode(ClientMessage.GroupConvert, "17538")]
+        public static void HandleGroupConvert(
+            ref PacketReader packet, WorldClass session)
+        {
+            var groupType =  packet.ReadByte() == 0x00 ? GroupType.Normal : GroupType.Raid;
+
+            //session.Character.Group.Type = groupType;
+            session.Character.Group.ChangeGroupType(groupType);
+            //session.Character.Group.RaidDifficulty = GroupDungeonDifficulty.None;
+            //session.Character.Group.DungeonDifficulty = GroupDungeonDifficulty.None;
+
+            session.Character.Group.Update();
+        }
+        
+        [Opcode(ClientMessage.GroupPromoteLeader, "17538")]
         public static void HandleGroupLeaderChange
             (ref PacketReader packet, WorldClass session)
         {
             // unk 
             packet.Skip(1); // 7F
+            
             BitUnpack BitUnpack = new BitUnpack(packet);
-            ulong leaderGUID = BitUnpack.GetPackedValue
-                (new byte[] { 6, 7, 0, 3, 2, 5, 4, 1 }, 
+            ulong leaderGUID = BitUnpack.GetPackedValue(
+                new byte[] { 5, 1, 7, 0, 4, 6, 2, 3 }, 
                 new byte[] { 5, 7, 1, 6, 2, 4, 0, 3 });
 
-            session.Character.Group.Leader = WorldMgr.GetSession(leaderGUID).Character;
+            var newLeader = WorldMgr.GetSession(leaderGUID);
 
-            GroupUpdate(ref session);
+            if (!(newLeader == null))
+                session.Character.Group.ChangeGroupLeader(newLeader.Character.Guid);
+
+            session.Character.Group.Update();
+            //GroupUpdate(session.Character.Group);
         }
 
         [Opcode(ClientMessage.GroupLootUpdate, "17538")]
         public static void HandleGroupLootUpdate
              (ref PacketReader packet, WorldClass session)
         {
-            packet.ReadByte();
-            packet.ReadByte();
-            packet.ReadUInt32();
+            // unk
+            packet.Skip(1); // 7F
+
+            //session.Character.Group.LootMethod = (GroupLootMethod)packet.ReadByte();
+            //session.Character.Group.LootThreshold = (GroupLootThreshold)packet.ReadUInt32();
+
+            session.Character.Group.ChangeGroupLootMethod((GroupLootMethod)packet.ReadByte());
+            session.Character.Group.ChangeGroupLootThreshold((GroupLootThreshold)packet.ReadUInt32());
 
             BitUnpack BitUnpack = new BitUnpack(packet);
 
             ulong GUID = BitUnpack.GetPackedValue(
-                new byte[] { 4, 0, 7, 3, 2, 6, 5, 1 }, 
+                new byte[] { 0, 2, 5, 3, 6, 7, 4, 1 }, 
                 new byte[] { 4, 7, 6, 3, 5, 1, 2, 0 });
+                
+            Log.Message(LogType.Error, "GUID: {0}", GUID);
+            var pChar = WorldMgr.GetSession(GUID);
 
-            GroupUpdate(ref session);
+            if(!(pChar == null))
+            {
+                //session.Character.Group.LooterGUID = pChar.Character.Guid;
+                session.Character.Group.ChangeGroupLooterGuid(pChar.Character.Guid);
+            }
+            else if(session.Character.Group.LootMethod != GroupLootMethod.MasterLoot)
+            {
+                session.Character.Group.LooterGUID = 0;
+                session.Character.Group.ChangeGroupLooterGuid(0);
+            }
+
+            session.Character.Group.Update();
         }
 
         [Opcode(ClientMessage.GroupMemberMark, "17538")]
@@ -141,14 +258,45 @@ namespace WorldServer.Game.Packets.PacketHandler
             // unk
             packet.Skip(1);
 
-            GroupMemberMark mark = (GroupMemberMark)packet.ReadByte();
-            BitUnpack BitUnpack = new BitUnpack(packet);
-            ulong targetGUID = BitUnpack.GetPackedValue
-                (new byte[] { 2, 5, 6, 4, 7, 1, 0, 3 },
-                new byte[] { 2, 6, 4, 3, 5, 7, 1, 0, });
-            session.Character.Group.GetMemberByGuid(targetGUID).GroupMark = mark;
+            var mark = packet.ReadByte();
 
-            GroupUpdate(ref session);
+            BitUnpack BitUnpack = new BitUnpack(packet);
+            ulong targetGUID = BitUnpack.GetPackedValue(
+                new byte[] { 0, 2, 3, 7, 1, 4, 5, 6 },
+                new byte[] { 2, 6, 4, 3, 5, 7, 1, 0 });
+
+            //session.Character.Group.change
+
+            session.Character.Group.Update();
+        }
+
+        [Opcode(ClientMessage.GroupLeave, "17538")]
+        public static void HandleGroupLeave(
+            ref PacketReader packet, WorldClass session)
+        {
+
+            session.Character.Group.Uninvite(session.Character.Guid); 
+            //GroupLeave(ref session);
+        }
+
+        [Opcode(ClientMessage.GroupMemberRole, "17538")]
+        public static void HandleGroupMemberRole(
+            ref PacketReader packet, WorldClass session)
+        {
+            // unk
+            packet.Skip(1); // 7F
+
+            var groupRole = (GroupMemberRole)packet.ReadUInt32();
+            BitUnpack BitUnpack = new BitUnpack(packet);
+
+            ulong GUID = BitUnpack.GetPackedValue(
+                new byte[] { 0, 5, 2, 4, 7, 3, 1, 6 },
+                new byte[] { 4, 6, 2, 5, 3, 7, 0, 1 });
+
+            session.Character.Group.ChangeGroupMemberRole(GUID, groupRole);
+
+            session.Character.Group.Update();
+
         }
 
         [Opcode(ClientMessage.GroupInviteResponse, "17538")]
@@ -166,31 +314,22 @@ namespace WorldServer.Game.Packets.PacketHandler
                     {
                         Group group;
                         var pChar = session.Character;
-                        var pLeader = WorldMgr.GetSession(pChar.PendingInvite);
+                        var pSession = WorldMgr.GetSession(pChar.PendingInvite);
                         pChar.PendingInvite = null;
 
-                        if (pLeader == null)
+                        if (pSession == null)
                             return;
 
-                        if (!pLeader.Character.IsInGroup())
-                        {
-                            group = new Group(PartyGUID++, pLeader.Character);
-                            pLeader.Character.Group = group;
-                            group.Add(pLeader.Character);
-                            group.LootMethod = GroupLootType.GroupLoot;
-                            group.LootThreshold = GroupLootThreshold.Uncommon;
-                            group.DungeonDifficulty = GroupDungeonDifficulty.FivePlayer;
-                        }
+                        if (!pSession.Character.IsInGroup())
+                            group = new Group(GroupMgr.GetGUID(), pSession.Character);
                         else
-                            group = pLeader.Character.Group;
+                            group = pSession.Character.Group;
 
                         if (group.IsFull())
                             return;
 
                         group.Add(pChar);
-                        pChar.Group = group;
-
-                        GroupUpdate(ref session);
+                        group.Update();
 
                         break;
                     }
@@ -199,223 +338,6 @@ namespace WorldServer.Game.Packets.PacketHandler
                         break;
                     }
 
-            }
-        }
-
-        public static void HandleGroupRequestDecline(ref PacketReader packet, WorldClass session)
-        {
-
-        }
-
-        public static void HandleGroupLoot(ref PacketReader packet, WorldClass session)
-        {
-
-        }
-
-        public static void HandleGroupChange(ref PacketReader packet, WorldClass session)
-        {
-
-        }
-
-        static void WriteGroupMembersGuidMask(IEnumerable<Character> pMembers, ref BitPack BitPack, ref PacketWriter writer, Character pChar)
-        {
-            bool hit = false;
-            foreach (Character c in pMembers)
-            {
-                BitPack.Write((byte)c.Name.Length, 6);
-                BitPack.WriteGuidMask(c.Guid, 4, 3, 7, 0, 1, 2, 6, 5);
-                //hit = true;
-
-                // Player must always be 2nd -- wtf Blizzard. Tested on 3m group
-                if (!hit)
-                {
-                    BitPack.Write((byte)pChar.Name.Length, 6);
-                    BitPack.WriteGuidMask(4, 3, 7, 0, 1, 2, 6, 5);
-                    hit = true;
-                }
-            }
-        }
-
-        static void WriteGroupMembersGuidBytes(IEnumerable<Character> pMembers, ref BitPack BitPack, ref PacketWriter writer, Character pChar)
-        {
-            bool hit = false;
-            foreach (Character c in pMembers)
-            {
-                // unk
-                writer.WriteUInt8(0x01);
-                writer.WriteUInt8(0x00);
-
-                BitPack.WriteGuidBytes(c.Guid, 2, 7, 4, 0);
-
-                //unk
-                writer.WriteUInt8(0x00);
-
-                BitPack.WriteGuidBytes(c.Guid, 6, 1, 5, 3);
-
-                //unk
-                writer.WriteUInt8(0x00);
-
-                writer.WriteString(c.Name);
-
-                // Player must always be 2nd -- wtf Blizzard. Tested on 3m group
-                if (!hit)
-                {
-                    // unk
-                    writer.WriteUInt8(0x01);
-                    writer.WriteUInt8(0x00);
-
-                    BitPack.WriteGuidBytes(2, 7, 4, 0);
-
-                    // unk
-                    writer.WriteUInt8(0x00);
-
-                    BitPack.WriteGuidBytes(6, 1, 5, 3);
-
-                    // unk
-                    writer.WriteUInt8(0x00);
-
-                    writer.WriteString(pChar.Name);
-
-                    hit = true;
-                }
-            }
-        }
-
-        static void GroupUpdate(ref WorldClass session)
-        {
-            Group group = session.Character.Group;
-            ulong unkGUID = 0;
-            foreach (Character pMember in group.MembersList)
-            {
-                PacketWriter writer = new PacketWriter(ServerMessage.GroupUpdate);
-                BitPack BitPack = new BitPack(writer, pMember.Guid);
-
-                //unk
-                writer.WriteUInt32((uint)group.MembersList.Count);
-                writer.WriteUInt8(0x01);
-                writer.WriteUInt8(0x00);
-                writer.WriteUInt8(0x00);
-                writer.WriteUInt32(0x01); // 1
-
-                // Leader guid mask
-                BitPack.WriteGuidMask(group.Leader.Guid, 3);
-                BitPack.WriteGuidMask(group.Leader.Guid, 6);
-
-                // Group GUID mask
-                BitPack.WriteGuidMask(group.Guid, 6);
-                BitPack.WriteGuidMask(group.Guid, 7);
-                BitPack.WriteGuidMask(group.Guid, 2);
-                BitPack.WriteGuidMask(group.Guid, 5);
-                BitPack.WriteGuidMask(group.Guid, 3);
-
-                // Leader guid mask
-                BitPack.WriteGuidMask(group.Leader.Guid, 0);
-                BitPack.WriteGuidMask(group.Leader.Guid, 5);
-
-                //unk Must be 1 if Group??
-                BitPack.Write(1);
-
-                // Group GUID mask
-                BitPack.WriteGuidMask(group.Guid, 4);
-
-                //unk
-                BitPack.Write(0, 8);
-                BitPack.Write(0, 8);
-                BitPack.Write((byte)group.MembersList.Count, 5);
-
-
-                //unk group flags prolly triggered by unk Must be 1
-                BitPack.WriteGuidMask(unkGUID, 4);
-                BitPack.WriteGuidMask(unkGUID, 6);
-                BitPack.WriteGuidMask(unkGUID, 5);
-                BitPack.WriteGuidMask(unkGUID, 7);
-                BitPack.WriteGuidMask(unkGUID, 0);
-                BitPack.WriteGuidMask(unkGUID, 1);
-                BitPack.WriteGuidMask(unkGUID, 2);
-                BitPack.WriteGuidMask(unkGUID, 3);
-
-                WriteGroupMembersGuidMask(group.GetGroupMembers(pMember), ref BitPack, ref writer, pMember);
-
-                // unk -- Party Raid?
-                BitPack.Write(0);
-
-                // Group GUID mask
-                BitPack.WriteGuidMask(group.Guid, 1);
-
-                //unk
-                BitPack.Write(1); // 1
-
-                // Leader guid mask
-                BitPack.WriteGuidMask(group.Leader.Guid, 4);
-
-                // Group GUID mask
-                BitPack.WriteGuidMask(group.Guid, 0);
-
-                // Leader guid mask
-                BitPack.WriteGuidMask(group.Leader.Guid, 2);
-                BitPack.WriteGuidMask(group.Leader.Guid, 7);
-                BitPack.WriteGuidMask(group.Leader.Guid, 1);
-
-                BitPack.Flush();
-
-                WriteGroupMembersGuidBytes(group.GetGroupMembers(pMember), ref BitPack, ref writer, pMember);
-
-                // Group Loot Threshold
-                writer.WriteUInt8((byte)group.LootThreshold);
-
-                // unk flags triggered by unk Must be 1
-                BitPack.WriteGuidBytes(unkGUID, 5);
-                BitPack.WriteGuidBytes(unkGUID, 4);
-
-                // Group Loot Type
-                writer.WriteUInt8((byte)group.LootMethod);
-
-                // unk flags triggered by unk Must be 1
-                BitPack.WriteGuidBytes(unkGUID, 3);
-                BitPack.WriteGuidBytes(unkGUID, 1);
-                BitPack.WriteGuidBytes(unkGUID, 0);
-                BitPack.WriteGuidBytes(unkGUID, 6);
-                BitPack.WriteGuidBytes(unkGUID, 2);
-                BitPack.WriteGuidBytes(unkGUID, 7);
-
-                // Group GUID Data
-                BitPack.WriteGuidBytes(group.Guid, 2);
-
-                //unk
-                writer.WriteUInt32(0x01); // 3
-
-                // Dungeon Difficulty -- UInt32 wtf?
-                writer.WriteUInt32((uint)group.DungeonDifficulty);
-
-                // Group GUID Data
-                BitPack.WriteGuidBytes(group.Guid, 5);
-                BitPack.WriteGuidBytes(group.Guid, 3);
-                BitPack.WriteGuidBytes(group.Guid, 1);
-                BitPack.WriteGuidBytes(group.Guid, 0);
-
-                //Leader GUID
-                BitPack.WriteGuidBytes(group.Leader.Guid, 7);
-                BitPack.WriteGuidBytes(group.Leader.Guid, 2);
-                BitPack.WriteGuidBytes(group.Leader.Guid, 0);
-                BitPack.WriteGuidBytes(group.Leader.Guid, 1);
-
-                // Group GUID Data
-                BitPack.WriteGuidBytes(group.Guid, 7);
-
-                //Leader GUID
-                BitPack.WriteGuidBytes(group.Leader.Guid, 6);
-                BitPack.WriteGuidBytes(group.Leader.Guid, 4);
-                BitPack.WriteGuidBytes(group.Leader.Guid, 5);
-
-                // Group GUID Data
-                BitPack.WriteGuidBytes(group.Guid, 6);
-                BitPack.WriteGuidBytes(group.Guid, 4);
-
-                //Leader GUID
-                BitPack.WriteGuidBytes(group.Leader.Guid, 3);
-
-                //session.Send(ref writer);
-                WorldMgr.GetSession(pMember.Guid).Send(ref writer);
             }
         }
     }

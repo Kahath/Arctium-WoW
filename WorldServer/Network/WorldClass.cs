@@ -59,7 +59,7 @@ namespace WorldServer.Network
 
             string clientInfo = ((IPEndPoint)clientSocket.RemoteEndPoint).Address + ":" + ((IPEndPoint)clientSocket.RemoteEndPoint).Port;
             PacketLog.WritePacket(clientInfo, null, packet);
-
+           // Log.Message(LogType.Error, "{0}", packet.ToString());
             PacketManager.InvokeHandler(ref packet, this);
         }
 
@@ -108,7 +108,7 @@ namespace WorldServer.Network
             }
             catch (Exception ex)
             {
-                Log.Message(LogType.Error, "{0}", ex.Message);
+                Log.Message(LogType.Error, "{0}", ex.ToString());
 
                 if (Character != null)
                     Globals.WorldMgr.DeleteSession(Character.Guid);
@@ -166,7 +166,7 @@ namespace WorldServer.Network
             }
             catch (Exception ex)
             {
-                Log.Message(LogType.Error, "{0}", ex.Message);
+                Log.Message(LogType.Error, "{0}", ex.ToString());
                 Log.Message();
 
                 clientSocket.Close();

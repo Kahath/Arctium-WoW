@@ -95,14 +95,21 @@ namespace Framework.Constants.NetMessage
         #endregion
 
         #region Group
-        GroupInvite = 0x0144,
-        GroupInviteResponse = 0x0DE5,
-        LeaveGroup = 0x1544,
-        GroupMemberMark = 0x15E4,
-        GroupMemberRole = 0x04C9,
-        PromoteToLeader = 0x11C1,
-        GroupLootUpdate = 0x15E9,
-        #endregion 
+        GroupInvite                     = 0x0144,
+        GroupInviteResponse             = 0x0DE5,
+        GroupLeave                      = 0x1544,
+        GroupMemberMark                 = 0x15E4,
+        GroupMemberRole                 = 0x04C9,
+        GroupPromoteLeader              = 0x11C1,
+        GroupLootUpdate                 = 0x15E9,
+        GroupConvert                    = 0x0469,
+        GroupResetInstances             = 0x0049,
+        GroupChangeDungeonDifficulty    = 0x0C69,
+        GroupPromoteAssist              = 0x00EC,
+        GroupMoveRaidMember             = 0x05C5,
+        GroupChangeRaidDifficulty       = 0x04B3,
+        GroupUninvite                   = 0x0168,
+        #endregion
 
         TransferInitiate            = 0x4F57,
     }

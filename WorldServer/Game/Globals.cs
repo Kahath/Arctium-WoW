@@ -32,6 +32,7 @@ namespace WorldServer.Game
         public static SpecializationManager SpecializationMgr;
         public static SpellManager SpellMgr;
         public static WorldManager WorldMgr;
+        public static GroupManager GroupMgr;
 
         public static void Initialize()
         {
@@ -46,6 +47,7 @@ namespace WorldServer.Game
             DataMgr           = DataManager.GetInstance();
             SpawnMgr          = SpawnManager.GetInstance();
             GossipMgr         = GossipManager.GetInstance();
+            GroupMgr          = GroupManager.GetInstance();
             ObjectMgr         = ObjectManager.GetInstance();
             WorldMgr          = WorldManager.GetInstance();
         }

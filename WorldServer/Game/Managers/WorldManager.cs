@@ -103,7 +103,8 @@ namespace WorldServer.Game.Managers
         public WorldClass GetSession(ulong guid)
         {
             WorldClass session;
-            Sessions.TryGetValue(guid, out session);
+            if (!Sessions.TryGetValue(guid, out session))
+                return null;
 
             return session;
         }

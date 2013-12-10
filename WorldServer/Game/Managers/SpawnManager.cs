@@ -39,6 +39,7 @@ namespace WorldServer.Game.Managers
             GameObjectSpawns = new ConcurrentDictionary<ulong, GameObjectSpawn>();
 
             Initialize();
+
         }
 
         public void Initialize()

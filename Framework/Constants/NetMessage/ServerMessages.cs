@@ -83,7 +83,6 @@ namespace Framework.Constants.NetMessage
         #region Group
         GroupInvite = 0x09A6,
         GroupUpdate = 0x01B5,
-        UpgradeAccountInviteFail = 0x1197,
         GroupLeave = 0x0165,
         #endregion
 

@@ -275,6 +275,7 @@ namespace WorldServer.Game.PacketHandler
             Log.Message(LogType.Debug, "Character with Guid: {0}, AccountId: {1} tried to enter the world.", guid, session.Account.Id);
 
             session.Character = new Character(guid);
+            session.Character.Group = GroupMgr.CharacterGroup(session.Character);
 
             if (!WorldMgr.AddSession(guid, ref session))
             {
@@ -283,6 +284,8 @@ namespace WorldServer.Game.PacketHandler
             }
 
             WorldMgr.WriteAccountDataTimes(AccountDataMasks.CharacterCacheMask, ref session);
+            
+
 
             MiscHandler.HandleMessageOfTheDay(ref session);
             TimeHandler.HandleLoginSetTimeSpeed(ref session);
@@ -294,6 +297,11 @@ namespace WorldServer.Game.PacketHandler
                 CinematicHandler.HandleStartCinematic(ref session);
 
             ObjectHandler.HandleUpdateObjectCreate(ref session);
+            if (session.Character.IsInGroup())
+            {
+                Log.Message(LogType.Debug, "Sending Update packet");
+                session.Character.Group.Update();
+            }
         }
     }
 }

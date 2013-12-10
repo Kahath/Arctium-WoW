@@ -247,7 +247,7 @@ namespace Framework.Network.Realm
             }
             catch (Exception ex)
             {
-                Log.Message(LogType.Error, "{0}", ex.Message);
+                Log.Message(LogType.Error, "{0}", ex.ToString());
             }
         }
 
@@ -265,7 +265,7 @@ namespace Framework.Network.Realm
             }
             catch (SocketException ex)
             {
-                Log.Message(LogType.Error, "{0}", ex.Message);
+                Log.Message(LogType.Error, "{0}", ex.ToString());
                 Log.Message();
 
                 clientSocket.Close();

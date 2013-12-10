@@ -77,6 +77,16 @@ namespace Framework.Network.Packets
             return (T)Convert.ChangeType(returnValue, typeof(T), CultureInfo.InvariantCulture);
         }
 
+        public ulong GetPackedValue(bool[] valueMask, byte[] mask, byte[] bytes)
+        {
+            byte[] valueBytes = new byte[bytes.Length];
+            for (byte i = 0; i < bytes.Length; i++)
+                if (valueMask[mask[i]])
+                    valueBytes[bytes[i]] = (byte)(reader.Read<byte>() ^ 1);
+
+            return BitConverter.ToUInt64(valueBytes, 0);                                         
+        }
+
         public ulong GetPackedValue(byte[] mask, byte[] bytes)
         {
             bool[] valueMask = new bool[mask.Length];
