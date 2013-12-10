@@ -146,7 +146,7 @@ namespace WorldServer.Game.Packets.PacketHandler
             packet.Skip(1);
             BitUnpack BitUnpack = new BitUnpack(packet);
 
-            for(int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++)
                 guidMask[i] = BitUnpack.GetBit();
 
             byte raidRole = (byte)(BitUnpack.GetBit() ? 1 : 0);
@@ -184,7 +184,7 @@ namespace WorldServer.Game.Packets.PacketHandler
         public static void HandleGroupConvert(
             ref PacketReader packet, WorldClass session)
         {
-            var groupType =  packet.ReadByte() == 0x00 ? GroupType.Normal : GroupType.Raid;
+            var groupType = packet.ReadByte() == 0x00 ? GroupType.Normal : GroupType.Raid;
 
             //session.Character.Group.Type = groupType;
             session.Character.Group.ChangeGroupType(groupType);
@@ -193,17 +193,17 @@ namespace WorldServer.Game.Packets.PacketHandler
 
             session.Character.Group.Update();
         }
-        
+
         [Opcode(ClientMessage.GroupPromoteLeader, "17538")]
         public static void HandleGroupLeaderChange
             (ref PacketReader packet, WorldClass session)
         {
             // unk 
             packet.Skip(1); // 7F
-            
+
             BitUnpack BitUnpack = new BitUnpack(packet);
             ulong leaderGUID = BitUnpack.GetPackedValue(
-                new byte[] { 5, 1, 7, 0, 4, 6, 2, 3 }, 
+                new byte[] { 5, 1, 7, 0, 4, 6, 2, 3 },
                 new byte[] { 5, 7, 1, 6, 2, 4, 0, 3 });
 
             var newLeader = WorldMgr.GetSession(leaderGUID);
@@ -231,18 +231,18 @@ namespace WorldServer.Game.Packets.PacketHandler
             BitUnpack BitUnpack = new BitUnpack(packet);
 
             ulong GUID = BitUnpack.GetPackedValue(
-                new byte[] { 0, 2, 5, 3, 6, 7, 4, 1 }, 
+                new byte[] { 0, 2, 5, 3, 6, 7, 4, 1 },
                 new byte[] { 4, 7, 6, 3, 5, 1, 2, 0 });
-                
+
             Log.Message(LogType.Error, "GUID: {0}", GUID);
             var pChar = WorldMgr.GetSession(GUID);
 
-            if(!(pChar == null))
+            if (!(pChar == null))
             {
                 //session.Character.Group.LooterGUID = pChar.Character.Guid;
                 session.Character.Group.ChangeGroupLooterGuid(pChar.Character.Guid);
             }
-            else if(session.Character.Group.LootMethod != GroupLootMethod.MasterLoot)
+            else if (session.Character.Group.LootMethod != GroupLootMethod.MasterLoot)
             {
                 session.Character.Group.LooterGUID = 0;
                 session.Character.Group.ChangeGroupLooterGuid(0);
@@ -275,7 +275,7 @@ namespace WorldServer.Game.Packets.PacketHandler
             ref PacketReader packet, WorldClass session)
         {
 
-            session.Character.Group.Uninvite(session.Character.Guid); 
+            session.Character.Group.Uninvite(session.Character.Guid);
             //GroupLeave(ref session);
         }
 
