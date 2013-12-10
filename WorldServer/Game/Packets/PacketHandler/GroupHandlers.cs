@@ -297,7 +297,6 @@ namespace WorldServer.Game.Packets.PacketHandler
                             group.LootThreshold = GroupLootThreshold.Uncommon;
                             group.DungeonDifficulty = GroupDungeonDifficulty.FivePlayer;
                             group.RaidDifficulty = GroupDungeonDifficulty.TenPlayer;
-                            Log.Message(LogType.Error, "BONER!");
                         }
                         else
                             group = pSession.Character.Group;
