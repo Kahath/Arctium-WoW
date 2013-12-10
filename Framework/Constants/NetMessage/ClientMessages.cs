@@ -102,7 +102,14 @@ namespace Framework.Constants.NetMessage
         GroupMemberRole = 0x04C9,
         GroupPromoteLeader = 0x11C1,
         GroupLootUpdate = 0x15E9,
-        #endregion 
+        GroupConvert = 0x0469,
+        GroupResetInstances = 0x0049,
+        GroupChangeDungeonDifficulty = 0x0C69,
+        GroupPromoteAssist = 0x00EC,
+        GroupMoveRaidMember = 0x05C5,
+        GroupChangeRaidDifficulty = 0x04B3,
+        GroupUninvite = 0x0168,
+        #endregion
 
         TransferInitiate            = 0x4F57,
     }

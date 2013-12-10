@@ -62,4 +62,16 @@ namespace Framework.Constants
         Damage = 0x08
     };
 
+    public enum GroupRaidGroups
+    {
+        GroupOne = 0x00,
+        GroupTwo = 0x01,
+        GroupThree = 0x02,
+        GroupFour = 0x03,
+        GroupFive = 0x04,
+        GroupSix = 0x05,
+        GroupSeven = 0x06,
+        GroupEight = 0x04,
+    };
+
 }

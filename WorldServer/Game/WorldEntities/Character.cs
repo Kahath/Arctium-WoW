@@ -54,7 +54,6 @@ namespace WorldServer.Game.WorldEntities
         public uint SecondarySpec;
         public string PendingInvite;
         public Group Group;
-        public GroupMemberRole GroupRole = GroupMemberRole.None;
 
         public Dictionary<ulong, WorldObject> InRangeObjects = new Dictionary<ulong, WorldObject>();
 
