@@ -23,6 +23,7 @@ namespace WorldServer.Game.WorldEntities
             public GroupRaidGroups RaidGroup { get; set; }
         };
 
+        public bool Online { get; set; }
         private readonly object sync = new object();
         private bool disband = false;
         public List<Member> Members;
@@ -52,9 +53,7 @@ namespace WorldServer.Game.WorldEntities
                 Members = new List<Member>(5);
             this.Add(leader);
 
-            DB.Characters.Execute("INSERT INTO `groups` VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                this.Guid, this.LeaderGUID, this.LootMethod, this.LooterGUID,
-                this.LootThreshold, this.Type, this.DungeonDifficulty, this.RaidDifficulty);
+            Globals.GroupMgr.SaveGroup(this);
         }
 
         public Group()
@@ -64,8 +63,7 @@ namespace WorldServer.Game.WorldEntities
 
         public void AddLoad(Member m)
         {
-            //lock (sync)
-                Members.Add(m);
+             Members.Add(m);
         }
 
         public void Add(Character pChar)
@@ -80,8 +78,9 @@ namespace WorldServer.Game.WorldEntities
             Members.Add(m);
             pChar.Group = this;
 
-            DB.Characters.Execute("INSERT INTO `group_member` VALUES(?, ?, ?, ?, ?, ?, ?)",
-                Guid, m.GUID, m.MemberRole, m.RaidRole, m.RaidGroup, m.Name, m.Flags);
+            Globals.GroupMgr.AddMemberToDB(m, this.Guid);
+            /*DB.Characters.Execute("INSERT INTO `group_member` VALUES(?, ?, ?, ?, ?, ?, ?)",
+                Guid, m.GUID, m.MemberRole, m.RaidRole, m.RaidGroup, m.Name, m.Flags);*/
         }
 
         public bool Remove(ulong GUID)
@@ -96,16 +95,18 @@ namespace WorldServer.Game.WorldEntities
             c.Group = null;
             Members.Remove(m);
 
-            DB.Characters.Execute("DELETE FROM `group_member` WHERE `memberGuid` = ?",
-                m.GUID);
+            Globals.GroupMgr.RemoveMemberFromDB(m.GUID);
+            /*DB.Characters.Execute("DELETE FROM `group_member` WHERE `memberGuid` = ?",
+                m.GUID);*/
 
             if (m.GUID == this.LeaderGUID)
             {
                 if (this.Members.Count > 1)
                 {
                     this.LeaderGUID = GetNewRandomLeader();
-                    DB.Characters.Execute("UPDATE `groups` SET `leaderGuid` = ? WHERE `guid` = ?",
-                        this.LeaderGUID, this.Guid);
+                    Globals.GroupMgr.UpdateGroupInfo<ulong>(this.Guid, "leaderGuid", this.LeaderGUID);
+                    /*DB.Characters.Execute("UPDATE `groups` SET `leaderGuid` = ? WHERE `guid` = ?",
+                        this.LeaderGUID, this.Guid);*/
                     return true;
                 }
             }
@@ -129,8 +130,9 @@ namespace WorldServer.Game.WorldEntities
             for(int i = 0; i < Members.Count; i++)
                 Uninvite(Members[i].GUID);
 
-            DB.Characters.Execute("DELETE FROM `groups` WHERE `guid` = ?",
-                this.Guid);
+            Globals.GroupMgr.RemoveGroupFromDB(this);
+            /*DB.Characters.Execute("DELETE FROM `groups` WHERE `guid` = ?",
+                this.Guid);*/
         }
 
         public IEnumerable<Member> GetGroupMembers(Member pChar = null)
@@ -143,6 +145,16 @@ namespace WorldServer.Game.WorldEntities
         public bool IsFull()
         {
             return Members.Count == 5 ? true : false;
+        }
+
+        public bool IsOnline()
+        {
+            foreach (Member m in Members)
+                if (Globals.WorldMgr.GetSession(m.GUID) != null)
+                    return true;
+
+            this.counter = 0;
+            return false;
         }
 
         public bool IsLeader(ulong GUID)
@@ -161,76 +173,101 @@ namespace WorldServer.Game.WorldEntities
         public void ChangeGroupMemberRole(ulong GUID, GroupMemberRole role)
         {    
             GetMemberFromGuid(GUID).MemberRole = role;
-            DB.Characters.Execute("UPDATE `group_member` SET `memberRole` = ? WHERE `memberGuid` = ?",
-                role, GUID);
+
+            Globals.GroupMgr.UpdateGroupMemberInfo<GroupMemberRole>(GUID, "memberRole", role);
+           /* if(saveDB)
+                DB.Characters.Execute("UPDATE `group_member` SET `memberRole` = ? WHERE `memberGuid` = ?",
+                    role, GUID);*/
         }
 
         public void ChangeRaidGroup(ulong GUID, GroupRaidGroups group)
         {
             GetMemberFromGuid(GUID).RaidGroup = group;
-            DB.Characters.Execute("UPDATE `group_member` SET `raidGroup` = ? WHERE `memberGuid` = ?",
-                group, GUID);
+
+            Globals.GroupMgr.UpdateGroupMemberInfo<GroupRaidGroups>(GUID, "raidGroup", group);
+            /*if(saveDB)
+                DB.Characters.Execute("UPDATE `group_member` SET `raidGroup` = ? WHERE `memberGuid` = ?",
+                    group, GUID);*/
         }
 
         public void ChangeRaidRole(ulong GUID, byte role)
         {
             GetMemberFromGuid(GUID).RaidRole = role;
-            DB.Characters.Execute("UPDATE `group_member` SET `raidRole` = ? WHERE `memberGuid` = ?",
-                role, GUID);
+
+            Globals.GroupMgr.UpdateGroupMemberInfo<byte>(GUID, "raidRole", role);
+            /*if(saveDB)
+                DB.Characters.Execute("UPDATE `group_member` SET `raidRole` = ? WHERE `memberGuid` = ?",
+                    role, GUID);*/
         }
 
         public void ChangeGroupLeader(ulong GUID)
         {
             this.LeaderGUID = GUID;
-            DB.Characters.Execute("UPDATE `groups` SET `leaderGuid` = ? WHERE `guid` = ?",
-                this.LeaderGUID, this.Guid);
+
+            Globals.GroupMgr.UpdateGroupInfo<ulong>(this.Guid, "leaderGuid", this.LeaderGUID);
+            /*if(saveDB)
+                DB.Characters.Execute("UPDATE `groups` SET `leaderGuid` = ? WHERE `guid` = ?",
+                    this.LeaderGUID, this.Guid);*/
         }
 
         public void ChangeGroupLootMethod(GroupLootMethod method)
         {
             this.LootMethod = method;
 
-            DB.Characters.Execute("UPDATE `groups` SET `lootMethod` = ? WHERE `guid` = ?",
-                this.LootMethod, this.Guid);
+            Globals.GroupMgr.UpdateGroupInfo<GroupLootMethod>(this.Guid, "lootMethod", this.LootMethod);
+            /*if (saveDB)
+                DB.Characters.Execute("UPDATE `groups` SET `lootMethod` = ? WHERE `guid` = ?",
+                    this.LootMethod, this.Guid);*/
         }
 
         public void ChangeGroupLootThreshold(GroupLootThreshold threshold)
         {
             this.LootThreshold = threshold;
 
-            DB.Characters.Execute("UPDATE `groups` SET `lootThreshold` = ? WHERE `guid` = ?",
-                this.LootThreshold, this.Guid);
+            Globals.GroupMgr.UpdateGroupInfo<GroupLootThreshold>(this.Guid, "lootThreshold", this.LootThreshold);
+            /*if (saveDB)
+                DB.Characters.Execute("UPDATE `groups` SET `lootThreshold` = ? WHERE `guid` = ?",
+                    this.LootThreshold, this.Guid);*/
         }
 
         public void ChangeGroupDungeonDifficulty(GroupDungeonDifficulty difficulty)
         {
             this.DungeonDifficulty = difficulty;
 
-            DB.Characters.Execute("UPDATE `groups` SET `dungeonDifficulty` = ? WHERE `guid` = ?",
-                this.DungeonDifficulty, this.Guid);
+            Globals.GroupMgr.UpdateGroupInfo<GroupDungeonDifficulty>(this.Guid, "dungeonDifficulty", this.DungeonDifficulty);
+            /*if (saveDB)
+                DB.Characters.Execute("UPDATE `groups` SET `dungeonDifficulty` = ? WHERE `guid` = ?",
+                    this.DungeonDifficulty, this.Guid);*/
         }
 
         public void ChangeGroupRaidDifficulty(GroupDungeonDifficulty difficulty)
         {
             this.RaidDifficulty = difficulty;
 
-            DB.Characters.Execute("UPDATE `groups` SET `raidDifficulty` = ? WHERE `guid` = ?",
-                this.RaidDifficulty, this.Guid);
+            Globals.GroupMgr.UpdateGroupInfo<GroupDungeonDifficulty>(this.Guid, "raidDifficulty", this.RaidDifficulty);
+            /*if (saveDB)
+                DB.Characters.Execute("UPDATE `groups` SET `raidDifficulty` = ? WHERE `guid` = ?",
+                    this.RaidDifficulty, this.Guid);*/
         }
 
         public void ChangeGroupType(GroupType type)
         {
             this.Type = type;
-            DB.Characters.Execute("UPDATE `groups` SET `groupType` = ? WHERE `guid` = ?",
-                this.Type, this.Guid);
+
+            Globals.GroupMgr.UpdateGroupInfo<GroupType>(this.Guid, "groupType", this.Type);
+            /*if (saveDB)
+                DB.Characters.Execute("UPDATE `groups` SET `groupType` = ? WHERE `guid` = ?",
+                    this.Type, this.Guid);*/
         }
 
         public void ChangeGroupLooterGuid(ulong guid)
         {
             this.LooterGUID = guid;
 
-            DB.Characters.Execute("UPDATE `groups` SET `looterGuid` = ? WHERE `guid` = ?",
-                this.LooterGUID, this.Guid);
+            Globals.GroupMgr.UpdateGroupInfo<ulong>(this.Guid, "looterGuid", this.LooterGUID);
+            /*if (saveDB)
+                DB.Characters.Execute("UPDATE `groups` SET `looterGuid` = ? WHERE `guid` = ?",
+                    this.LooterGUID, this.Guid);*/
         }
 
         public void Update()
@@ -238,6 +275,10 @@ namespace WorldServer.Game.WorldEntities
             counter++;
             foreach (Member pMember in Members)
             {
+                var session = Globals.WorldMgr.GetSession(pMember.GUID);
+                if (session == null)
+                    return;
+
                 PacketWriter writer = new PacketWriter(ServerMessage.GroupUpdate);
                 BitPack BitPack = new BitPack(writer, pMember.GUID);
 
@@ -360,9 +401,8 @@ namespace WorldServer.Game.WorldEntities
                 //Leader GUID
                 BitPack.WriteGuidBytes(LeaderGUID, 3);
 
-                var session = Globals.WorldMgr.GetSession(pMember.GUID);
-                if(session != null)
-                    session.Send(ref writer);
+                
+                session.Send(ref writer);
             }
         }
 
