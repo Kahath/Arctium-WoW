@@ -26,6 +26,7 @@ namespace WorldServer.Game
         public static AddonManager AddonMgr;
         public static DataManager DataMgr;
         public static GossipManager GossipMgr;
+        public static GroupManager GroupMgr;
         public static ObjectManager ObjectMgr;
         public static SkillManager SkillMgr;
         public static SpawnManager SpawnMgr;
@@ -46,6 +47,7 @@ namespace WorldServer.Game
             DataMgr           = DataManager.GetInstance();
             SpawnMgr          = SpawnManager.GetInstance();
             GossipMgr         = GossipManager.GetInstance();
+            GroupMgr          = GroupManager.GetInstance();
             ObjectMgr         = ObjectManager.GetInstance();
             WorldMgr          = WorldManager.GetInstance();
         }

@@ -11,8 +11,6 @@ namespace WorldServer.Game.Packets.PacketHandler
 {
     public class GroupHandler : Globals
     {
-        static ulong PartyGUID = 1;
-
         [Opcode(ClientMessage.GroupUninvite, "17538")]
         public static void HandleGroupUninvite(
             ref PacketReader packet, WorldClass session)
@@ -40,7 +38,7 @@ namespace WorldServer.Game.Packets.PacketHandler
         public static void HandleGroupChangeRaidDifficulty(
             ref PacketReader packet, WorldClass session)
         {
-            session.Character.Group.RaidDifficulty = (GroupDungeonDifficulty)packet.ReadUInt32();
+            session.Character.Group.ChangeGroupRaidDifficulty((GroupDungeonDifficulty)packet.ReadUInt32());
             session.Character.Group.Update();
         }
 
@@ -103,7 +101,7 @@ namespace WorldServer.Game.Packets.PacketHandler
         public static void HandleGroupDifficulty(
             ref PacketReader packet, WorldClass session)
         {
-            session.Character.Group.DungeonDifficulty = (GroupDungeonDifficulty)packet.ReadUInt32();
+            session.Character.Group.ChangeGroupDungeonDifficulty((GroupDungeonDifficulty)packet.ReadUInt32());
             session.Character.Group.Update();
         }
 
@@ -113,7 +111,7 @@ namespace WorldServer.Game.Packets.PacketHandler
         {
             var groupType = packet.ReadByte() == 0x00 ? GroupType.Normal : GroupType.Raid;
 
-            session.Character.Group.Type = groupType;
+            session.Character.Group.ChangeGroupType(groupType);
 
             // atm
             session.Character.Group.RaidDifficulty = GroupDungeonDifficulty.None;
@@ -137,7 +135,7 @@ namespace WorldServer.Game.Packets.PacketHandler
             var newLeader = WorldMgr.GetSession(leaderGUID);
 
             if (!(newLeader == null))
-                session.Character.Group.LeaderGUID = newLeader.Character.Guid;
+                session.Character.Group.ChangeGroupLeader(newLeader.Character.Guid);
 
             session.Character.Group.Update();
         }
@@ -149,8 +147,8 @@ namespace WorldServer.Game.Packets.PacketHandler
             // unk
             packet.Skip(1); // 7F
 
-            session.Character.Group.LootMethod = (GroupLootMethod)packet.ReadByte();
-            session.Character.Group.LootThreshold = (GroupLootThreshold)packet.ReadUInt32();
+            session.Character.Group.ChangeGroupLootMethod((GroupLootMethod)packet.ReadByte());
+            session.Character.Group.ChangeGroupLootThreshold((GroupLootThreshold)packet.ReadUInt32());
 
             BitUnpack BitUnpack = new BitUnpack(packet);
 
@@ -163,11 +161,11 @@ namespace WorldServer.Game.Packets.PacketHandler
 
             if (!(pChar == null))
             {
-                session.Character.Group.LooterGUID = pChar.Character.Guid;
+                session.Character.Group.ChangeGroupLooterGuid(pChar.Character.Guid);
             }
             else if (session.Character.Group.LootMethod != GroupLootMethod.MasterLoot)
             {
-                session.Character.Group.LooterGUID = 0;
+                session.Character.Group.ChangeGroupLooterGuid(0);
             }
 
             session.Character.Group.Update();
@@ -290,14 +288,7 @@ namespace WorldServer.Game.Packets.PacketHandler
                             return;
 
                         if (!pSession.Character.IsInGroup())
-                        {
-                            group = new Group(PartyGUID++, pSession.Character);
-                            group.LooterGUID = 0;
-                            group.LootMethod = GroupLootMethod.GroupLoot;
-                            group.LootThreshold = GroupLootThreshold.Uncommon;
-                            group.DungeonDifficulty = GroupDungeonDifficulty.FivePlayer;
-                            group.RaidDifficulty = GroupDungeonDifficulty.TenPlayer;
-                        }
+                            group = new Group(GroupMgr.GetGUID(), pSession.Character);
                         else
                             group = pSession.Character.Group;
 
@@ -305,9 +296,7 @@ namespace WorldServer.Game.Packets.PacketHandler
                             return;
 
                         group.Add(pChar);
-
                         group.Update();
-                        //GroupUpdate(group);
 
                         break;
                     }

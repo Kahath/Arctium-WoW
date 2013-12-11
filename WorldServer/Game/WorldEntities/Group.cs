@@ -18,9 +18,10 @@ namespace WorldServer.Game.WorldEntities
             public GroupRaidGroups RaidGroup { get; set; }
         };
 
+        public bool Saved { get; set; }
         private bool disband = false;
         public List<Member> Members; 
-        public ulong Guid { get; private set; }
+        public ulong Guid { get; set; }
         public ulong LeaderGUID { get; set; }
         public ulong LooterGUID { get; set; }
         public GroupLootMethod LootMethod { get; set; }
@@ -35,11 +36,29 @@ namespace WorldServer.Game.WorldEntities
             this.Guid = groupGuid;
             this.LeaderGUID = leader.Guid;
             this.Type = type;
+            LooterGUID = 0;
+            LootMethod = GroupLootMethod.GroupLoot;
+            LootThreshold = GroupLootThreshold.Uncommon;
+            DungeonDifficulty = GroupDungeonDifficulty.FivePlayer;
+            RaidDifficulty = GroupDungeonDifficulty.TenPlayer;
+
             if (this.Type != GroupType.Normal)
                 Members = new List<Member>(40);
             else
                 Members = new List<Member>(5);
             this.Add(leader);
+
+            Globals.GroupMgr.SaveGroup(this);
+        }
+
+        public Group()
+        {
+            Members = new List<Member>();
+        }
+
+        public void AddLoad(Member m)
+        {
+            Members.Add(m);
         }
 
         public void Add(Character pChar)
@@ -53,6 +72,8 @@ namespace WorldServer.Game.WorldEntities
             m.Flags = 0x01;
             Members.Add(m);
             pChar.Group = this;
+
+            Globals.GroupMgr.AddMemberToDB(m, this.Guid);
         }
 
         public bool Remove(ulong GUID)
@@ -67,11 +88,14 @@ namespace WorldServer.Game.WorldEntities
             c.Group = null;
             Members.Remove(m);
 
+            Globals.GroupMgr.RemoveMemberFromDB(m.GUID);
+
             if (m.GUID == this.LeaderGUID)
             {
                 if (this.Members.Count > 1)
                 {
                     this.LeaderGUID = GetNewRandomLeader();
+                    Globals.GroupMgr.UpdateGroupInfo<ulong>(this.Guid, "leaderGuid", this.LeaderGUID);
                     return true;
                 }
             }
@@ -94,6 +118,8 @@ namespace WorldServer.Game.WorldEntities
             this.disband = true;
             for (int i = 0; i < Members.Count; i++)
                 Uninvite(Members[i].GUID);
+
+            Globals.GroupMgr.RemoveGroupFromDB(this);
         }
 
         public IEnumerable<Member> GetGroupMembers(Member pChar = null)
@@ -109,6 +135,21 @@ namespace WorldServer.Game.WorldEntities
             return Members.Count == 5 ? true : false;
         }
 
+        public bool IsOnline()
+        {
+            foreach (Member m in Members)
+                if (Globals.WorldMgr.GetSession(m.GUID) != null)
+                    return true;
+
+            this.counter = 0;
+            return false;
+        }
+
+        public bool IsLeader(ulong GUID)
+        {
+            return GUID == LeaderGUID ? true : false;
+        }
+
         public Member GetMemberFromGuid(ulong GUID)
         {
             foreach (Member m in Members)
@@ -120,16 +161,71 @@ namespace WorldServer.Game.WorldEntities
         public void ChangeGroupMemberRole(ulong GUID, GroupMemberRole role)
         {
             GetMemberFromGuid(GUID).MemberRole = role;
+
+            Globals.GroupMgr.UpdateGroupMemberInfo<GroupMemberRole>(GUID, "memberRole", role);
         }
 
         public void ChangeRaidGroup(ulong GUID, GroupRaidGroups group)
         {
             GetMemberFromGuid(GUID).RaidGroup = group;
+
+            Globals.GroupMgr.UpdateGroupMemberInfo<GroupRaidGroups>(GUID, "raidGroup", group);
         }
 
         public void ChangeRaidRole(ulong GUID, byte role)
         {
             GetMemberFromGuid(GUID).RaidRole = role;
+
+            Globals.GroupMgr.UpdateGroupMemberInfo<byte>(GUID, "raidGroup", role);
+        }
+
+        public void ChangeGroupLeader(ulong GUID)
+        {
+            this.LeaderGUID = GUID;
+
+            Globals.GroupMgr.UpdateGroupInfo<ulong>(this.Guid, "leaderGuid", this.LeaderGUID);
+        }
+
+        public void ChangeGroupLootMethod(GroupLootMethod method)
+        {
+            this.LootMethod = method;
+
+            Globals.GroupMgr.UpdateGroupInfo<GroupLootMethod>(this.Guid, "lootMethod", this.LootMethod);
+        }
+
+        public void ChangeGroupLootThreshold(GroupLootThreshold threshold)
+        {
+            this.LootThreshold = threshold;
+
+            Globals.GroupMgr.UpdateGroupInfo<GroupLootThreshold>(this.Guid, "lootThreshold", this.LootThreshold);
+        }
+
+        public void ChangeGroupDungeonDifficulty(GroupDungeonDifficulty difficulty)
+        {
+            this.DungeonDifficulty = difficulty;
+
+            Globals.GroupMgr.UpdateGroupInfo<GroupDungeonDifficulty>(this.Guid, "dungeonDifficulty", this.DungeonDifficulty);
+        }
+
+        public void ChangeGroupRaidDifficulty(GroupDungeonDifficulty difficulty)
+        {
+            this.RaidDifficulty = difficulty;
+
+            Globals.GroupMgr.UpdateGroupInfo<GroupDungeonDifficulty>(this.Guid, "raidDifficulty", this.RaidDifficulty);
+        }
+
+        public void ChangeGroupType(GroupType type)
+        {
+            this.Type = type;
+
+            Globals.GroupMgr.UpdateGroupInfo<GroupType>(this.Guid, "groupType", this.Type);
+        }
+
+        public void ChangeGroupLooterGuid(ulong guid)
+        {
+            this.LooterGUID = guid;
+
+            Globals.GroupMgr.UpdateGroupInfo<ulong>(this.Guid, "looterGuid", this.LooterGUID);
         }
 
         public void Update()
