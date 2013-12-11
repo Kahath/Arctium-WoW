@@ -183,7 +183,7 @@ namespace WorldServer.Game.WorldEntities
         {
             this.LeaderGUID = GUID;
 
-            Globals.GroupMgr.UpdateGroupInfo<ulong>(this.Guid, "leaderGuid", this.LeaderGUID);
+            Globals.GroupMgr.UpdateGroupInfo<ulong>(this.Guid, "leaderGuid", this.LeaderGUID, true);
         }
 
         public void ChangeGroupLootMethod(GroupLootMethod method)
@@ -225,7 +225,7 @@ namespace WorldServer.Game.WorldEntities
         {
             this.LooterGUID = guid;
 
-            Globals.GroupMgr.UpdateGroupInfo<ulong>(this.Guid, "looterGuid", this.LooterGUID);
+            Globals.GroupMgr.UpdateGroupInfo<ulong>(this.Guid, "looterGuid", this.LooterGUID, true);
         }
 
         public void Update()

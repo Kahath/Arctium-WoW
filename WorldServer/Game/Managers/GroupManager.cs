@@ -90,11 +90,11 @@ namespace WorldServer.Game.Managers
                     GUID);
         }
 
-        public void UpdateGroupMemberInfo<T>(ulong GUID, string columnName, T result)
+        public void UpdateGroupMemberInfo<T>(ulong GUID, string columnName, T result, bool force = false)
         {
             result = (T)Convert.ChangeType(result, typeof(T));
 
-            if (dbSave && immediateUpdate)
+            if (dbSave && (immediateUpdate || force))
             {
                 DB.Characters.Execute("UPDATE `group_member` SET `" + columnName + "` = ? WHERE `memberGuid` = ?",
                     columnName, result, GUID);
@@ -102,11 +102,11 @@ namespace WorldServer.Game.Managers
             }
         }
 
-        public void UpdateGroupInfo<T>(ulong GUID, string columnName, T result)
+        public void UpdateGroupInfo<T>(ulong GUID, string columnName, T result, bool force = false)
         {
             result = (T)Convert.ChangeType(result, typeof(T));
 
-            if (dbSave && immediateUpdate)
+            if (dbSave && (immediateUpdate || force))
             {
                 DB.Characters.Execute("UPDATE `groups` SET `" + columnName + "` = ? WHERE `guid` = ?",
                     columnName, result, GUID);

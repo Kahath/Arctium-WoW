@@ -282,6 +282,8 @@ namespace WorldServer.Game.PacketHandler
                 return;
             }
 
+            session.Character.Group = GroupMgr.CharacterGroup(session.Character);
+
             WorldMgr.WriteAccountDataTimes(AccountDataMasks.CharacterCacheMask, ref session);
 
             MiscHandler.HandleMessageOfTheDay(ref session);
