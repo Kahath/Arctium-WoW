@@ -296,6 +296,11 @@ namespace WorldServer.Game.PacketHandler
                 CinematicHandler.HandleStartCinematic(ref session);
 
             ObjectHandler.HandleUpdateObjectCreate(ref session);
+            if (session.Character.IsInGroup())
+            {
+                Log.Message(LogType.Debug, "Sending Update packet");
+                session.Character.Group.Update();
+            }
         }
     }
 }
