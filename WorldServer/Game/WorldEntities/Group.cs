@@ -23,7 +23,7 @@ namespace WorldServer.Game.WorldEntities
             public GroupRaidGroups RaidGroup { get; set; }
         };
 
-        public bool Online { get; set; }
+        public bool Saved { get; set; }
         private readonly object sync = new object();
         private bool disband = false;
         public List<Member> Members;
@@ -39,6 +39,7 @@ namespace WorldServer.Game.WorldEntities
 
         public Group(ulong groupGuid, Character leader, GroupType type = GroupType.Normal)
         {
+            this.Saved = false;
             this.Guid = groupGuid;
             this.LeaderGUID = leader.Guid;
             this.Type = type;

@@ -123,6 +123,7 @@ namespace WorldServer.Game.Managers
                 
                 ulong tempGUID = result.Read<ulong>(i, "guid");
                 Group = new Group();
+                Group.Saved = true;
                 Group.LeaderGUID = result.Read<ulong>(i, "leaderGuid");
                 Group.Guid = GUID++;
                 Group.LootMethod = (GroupLootMethod)result.Read<byte>(i, "lootMethod");
@@ -167,7 +168,7 @@ namespace WorldServer.Game.Managers
 
         private void TimerCallback(object o)
         {
-            int s = 0;
+            uint s = 0;
             Log.Message(LogType.DB, "Saving groups to database...");
             Parallel.ForEach(Groups, (KeyValuePair<ulong, Group> keyval) =>
                 {
@@ -176,7 +177,7 @@ namespace WorldServer.Game.Managers
                         ++s;
                         return;
                     }
-                    if (keyval.Value.Guid < newGUID)
+                    if (keyval.Value.Saved)
                     {
                         DB.Characters.Execute("UPDATE `groups` SET " +
                             "`guid` = ?, " +
@@ -236,6 +237,8 @@ namespace WorldServer.Game.Managers
                                 keyval.Value.Members[i].RaidRole,
                                 keyval.Value.Members[i].RaidGroup);
                         }
+
+                        keyval.Value.Saved = true;
                     }
                 });
             Log.Message(LogType.DB, "{0} groups saved", Groups.Count - s);
