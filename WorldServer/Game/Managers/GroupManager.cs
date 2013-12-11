@@ -119,10 +119,8 @@ namespace WorldServer.Game.Managers
             SQLResult result = DB.Characters.Select("SELECT * FROM `groups`");
             Parallel.For(0, result.Count, i =>
             {
-                Group Group = new Group();
-                
+                Group Group = new Group();               
                 ulong tempGUID = result.Read<ulong>(i, "guid");
-                Group = new Group();
                 Group.Saved = true;
                 Group.LeaderGUID = result.Read<ulong>(i, "leaderGuid");
                 Group.Guid = GUID++;
