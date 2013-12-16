@@ -28,7 +28,7 @@ namespace WorldServer.Game.Packets.PacketHandler
 {
     public class SpecializationHandler : Globals
     {
-        [Opcode(ClientMessage.CliSetSpecialization, "17538")]
+        [Opcode(ClientMessage.CliSetSpecialization, "17658")]
         public static void HandleCliSetSpecialization(ref PacketReader packet, WorldClass session)
         {
             var pChar = session.Character;
@@ -61,7 +61,7 @@ namespace WorldServer.Game.Packets.PacketHandler
             Log.Message(LogType.Debug, "Character (Guid: {0}) choosed specialization {1} for spec group {2}.", pChar.Guid, pChar.GetActiveSpecId(), pChar.ActiveSpecGroup);
         }
 
-        [Opcode(ClientMessage.CliLearnTalents, "17538")]
+        [Opcode(ClientMessage.CliLearnTalents, "17658")]
         public static void HandleLearnTalents(ref PacketReader packet, WorldClass session)
         {
             var pChar = session.Character;
