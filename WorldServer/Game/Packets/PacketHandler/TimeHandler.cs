@@ -24,13 +24,13 @@ namespace WorldServer.Game.Packets.PacketHandler
 {
     public class TimeHandler : Globals
     {
-        [Opcode(ClientMessage.ReadyForAccountDataTimes, "17538")]
+        [Opcode(ClientMessage.ReadyForAccountDataTimes, "17658")]
         public static void HandleReadyForAccountDataTimes(ref PacketReader packet, WorldClass session)
         {
             WorldMgr.WriteAccountDataTimes(AccountDataMasks.GlobalCacheMask, ref session);
         }
 
-        [Opcode(ClientMessage.UITimeRequest, "17538")]
+        [Opcode(ClientMessage.UITimeRequest, "17658")]
         public static void HandleUITimeRequest(ref PacketReader packet, WorldClass session)
         {
             PacketWriter uiTime = new PacketWriter(ServerMessage.UITime);
@@ -40,39 +40,14 @@ namespace WorldServer.Game.Packets.PacketHandler
             session.Send(ref uiTime);
         }
 
-        [Opcode(ClientMessage.RealmSplit, "17538")]
-        public static void HandleRealmSplit(ref PacketReader packet, WorldClass session)
-        {
-            uint realmSplitState = 0;
-            var date = "01/01/01";
-
-            PacketWriter realmSplit = new PacketWriter(ServerMessage.RealmSplit);
-            BitPack BitPack = new BitPack(realmSplit);
-
-            realmSplit.WriteUInt32(packet.Read<uint>());
-            realmSplit.WriteUInt32(realmSplitState);
-
-            BitPack.Write(date.Length, 7);
-
-            BitPack.Flush();
-
-            realmSplit.WriteString(date);
-
-            session.Send(ref realmSplit);
-
-            // Crash!!!
-            // Wrong data sent...
-            // AddonMgr.WriteAddonData(ref session);
-        }
-
         public static void HandleLoginSetTimeSpeed(ref WorldClass session)
         {
             PacketWriter loginSetTimeSpeed = new PacketWriter(ServerMessage.LoginSetTimeSpeed);
 
-            loginSetTimeSpeed.WriteInt32(1);
-            loginSetTimeSpeed.WriteInt32(1);
-            loginSetTimeSpeed.WriteFloat(0.01666667f);
+            loginSetTimeSpeed.WriteInt32(0);
+            loginSetTimeSpeed.WriteInt32(0);
             loginSetTimeSpeed.WritePackedTime();
+            loginSetTimeSpeed.WriteFloat(0.01666667f);
             loginSetTimeSpeed.WritePackedTime();
 
             session.Send(ref loginSetTimeSpeed);

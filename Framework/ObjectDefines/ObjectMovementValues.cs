@@ -47,6 +47,8 @@ namespace Framework.ObjectDefines
         public bool HasMovementFlags2         = false;
         public bool IsFallingOrJumping        = false;
         public bool HasJumpData               = false;
+        public bool IsAreaTrigger             = false;
+        public bool IsSceneObject             = false;
 
         // Data
         public MovementFlag MovementFlags     = 0;
