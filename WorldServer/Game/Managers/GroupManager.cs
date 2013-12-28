@@ -19,7 +19,7 @@ namespace WorldServer.Game.Managers
         private ulong GUID = 0;
         private ulong newGUID = 0;
         private uint interval = 5 * 60 * 1000; // 5min
-        private bool dbSave = true;
+        private bool dbSave = false;
         private bool immediateUpdate = true;
         public Group.Member Member;
         ConcurrentDictionary<ulong, Group> Groups; 
@@ -29,10 +29,9 @@ namespace WorldServer.Game.Managers
             Groups = new ConcurrentDictionary<ulong, Group>();
 
             if (dbSave)
-            {
                 update = new Timer(TimerCallback, null, interval, interval);
-                Initialize();
-            }
+            
+            Initialize();
         }
 
         public void Initialize()
@@ -53,14 +52,17 @@ namespace WorldServer.Game.Managers
             return GUID++;
         }
 
-        public void SaveGroup(Group g)
+        public void SaveGroup(Group g, bool force = false)
         {
             Groups.TryAdd(g.Guid, g);
 
-            if(dbSave)
+            if (dbSave && (immediateUpdate || force))
+            {
                 DB.Characters.Execute("INSERT INTO `groups` VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     g.Guid, g.LeaderGUID, g.LootMethod, g.LooterGUID,
                     g.LootThreshold, g.Type, g.DungeonDifficulty, g.RaidDifficulty);
+                g.Saved = true;
+            }
         }
 
         public void RemoveGroupFromDB(Group g)
@@ -87,34 +89,41 @@ namespace WorldServer.Game.Managers
                     GUID);
         }
 
-        public void UpdateGroupMemberInfo<T>(ulong GUID, string columnName, T result)
+        public void UpdateGroupMemberInfo<T>(ulong GUID, string columnName, T result, bool force = false)
         {
             result = (T)Convert.ChangeType(result, typeof(T));
 
-            if (dbSave && immediateUpdate)
+            if (dbSave && (immediateUpdate || force))
             {
                 DB.Characters.Execute("UPDATE `group_member` SET `" + columnName + "` = ? WHERE `memberGuid` = ?",
                     columnName, result, GUID);
-                Log.Message(LogType.DB, "Immediate update of {0}", result);
+                Log.Message(LogType.DB, "Immediate update of {0}", result.GetType());
             }
         }
 
-        public void UpdateGroupInfo<T>(ulong GUID, string columnName, T result)
+        public void UpdateGroupInfo<T>(ulong GUID, string columnName, T result, bool force = false)
         {
             result = (T)Convert.ChangeType(result, typeof(T));
 
-            if (dbSave && immediateUpdate)
+            if (dbSave && (immediateUpdate || force))
             {
                 DB.Characters.Execute("UPDATE `groups` SET `" + columnName + "` = ? WHERE `guid` = ?",
                     columnName, result, GUID);
-                Log.Message(LogType.DB, "Immediate update of {0}", result);
+                Log.Message(LogType.DB, "Immediate update of {0}", result.GetType());
             }
         }
 
         public void LoadGroups()
         {
             Log.Message(LogType.DB, "Loading groups...");
-            ParallelOptions parallelOptions = new ParallelOptions();
+
+            if (!dbSave)
+            {
+                Log.Message(LogType.DB, "Groups saving turned off. Deleting all groups and members...");
+                DB.Characters.Execute("DELETE FROM `groups`");
+                DB.Characters.Execute("DELETE FROM `group_member`");
+                return;
+            }
 
             SQLResult result = DB.Characters.Select("SELECT * FROM `groups`");
             Parallel.For(0, result.Count, i =>
@@ -141,7 +150,7 @@ namespace WorldServer.Game.Managers
                     Member = new Group.Member();
                     Member.GUID = res.Read<ulong>(j, "memberGuid");
                     Member.MemberRole = (GroupMemberRole)res.Read<byte>(j, "memberRole");
-                    Member.RaidRole = res.Read<byte>(j, "raidRole");
+                    Member.RaidRole = res.Read<GroupRaidRole>(j, "raidRole");
                     Member.RaidGroup = (GroupRaidGroups)res.Read<byte>(j, "raidGroup");
                     Member.Name = res.Read<string>(j, "name");
                     Member.Flags = res.Read<byte>(j, "flags");

@@ -89,4 +89,10 @@ namespace Framework.Constants
         GroupEight = 0x04,
     };
 
+    public enum GroupRaidRole
+    {
+        None = 0x00,
+        Assist = 0x01,
+    };
+
 }

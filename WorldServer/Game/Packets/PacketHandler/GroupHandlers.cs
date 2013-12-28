@@ -13,15 +13,30 @@ namespace WorldServer.Game.Packets.PacketHandler
 {
     public class GroupHandler : Globals
     {
-        static ulong PartyGUID = 1;
         [Opcode(ClientMessage.GroupInvite, "17538")]
         public static void HandleGroupRequest(ref PacketReader packet, WorldClass session)
         {
+            bool[] valueMask = new bool[8];
             var pChar = session.Character;
             BitUnpack BitUnpack = new BitUnpack(packet);
-            packet.Skip(11);
+            //packet.Skip(11);
+            packet.ReadUInt32();
+            packet.ReadUInt32();
+
+            valueMask[0] = BitUnpack.GetBit();
+
+            packet.ReadByte();
+
+            for (int i = 1; i < 8; i++)
+                valueMask[i] = BitUnpack.GetBit();
+
+            packet.ReadByte();
+            //packet.ReadByte();
+
             BitUnpack.GetBits<byte>(4);
+
             var length = BitUnpack.GetBits<byte>(6);
+
             var message = packet.ReadString(length);
             var pTarget = WorldMgr.GetSession(message);
             string Realm = "Outland"; // hardcoded atm
@@ -106,17 +121,16 @@ namespace WorldServer.Game.Packets.PacketHandler
             session.Character.Group.Uninvite(GUID);
         }
 
-        [Opcode(ClientMessage.GroupChangeRaidDifficulty, "17538")]
+        [Opcode(ClientMessage.GroupRaidDifficulty, "17538")]
         public static void HandleGroupChangeRaidDifficulty(
             ref PacketReader packet, WorldClass session)
         {
-            //session.Character.Group.RaidDifficulty = (GroupDungeonDifficulty)packet.ReadUInt32();
             session.Character.Group.ChangeGroupRaidDifficulty((GroupDungeonDifficulty)packet.ReadUInt32());
 
             session.Character.Group.Update();
         }
 
-        [Opcode(ClientMessage.GroupMoveRaidMember, "17538")]
+        [Opcode(ClientMessage.GroupRaidMemberGroup, "17538")]
         public static void HandleGroupMoveRaidMember(
             ref PacketReader packet, WorldClass session)
         {
@@ -149,7 +163,7 @@ namespace WorldServer.Game.Packets.PacketHandler
             for (int i = 0; i < 4; i++)
                 guidMask[i] = BitUnpack.GetBit();
 
-            byte raidRole = (byte)(BitUnpack.GetBit() ? 1 : 0);
+            GroupRaidRole raidRole = (GroupRaidRole)(BitUnpack.GetBit() ? 1 : 0);
 
             for (int i = 4; i < 8; i++)
                 guidMask[i] = BitUnpack.GetBit();
@@ -167,15 +181,13 @@ namespace WorldServer.Game.Packets.PacketHandler
                 return;
 
             pSession.Character.Group.ChangeRaidRole(pSession.Character.Guid, raidRole);
-
             session.Character.Group.Update();
         }
 
-        [Opcode(ClientMessage.GroupChangeDungeonDifficulty, "17538")]
+        [Opcode(ClientMessage.GroupDungeonDifficulty, "17538")]
         public static void HandleGroupDifficulty(
             ref PacketReader packet, WorldClass session)
         {
-            //session.Character.Group.DungeonDifficulty = (GroupDungeonDifficulty)packet.ReadUInt32();
             session.Character.Group.ChangeGroupDungeonDifficulty((GroupDungeonDifficulty)packet.ReadUInt32());
             session.Character.Group.Update();
         }
@@ -186,7 +198,6 @@ namespace WorldServer.Game.Packets.PacketHandler
         {
             var groupType = packet.ReadByte() == 0x00 ? GroupType.Normal : GroupType.Raid;
 
-            //session.Character.Group.Type = groupType;
             session.Character.Group.ChangeGroupType(groupType);
             //session.Character.Group.RaidDifficulty = GroupDungeonDifficulty.None;
             //session.Character.Group.DungeonDifficulty = GroupDungeonDifficulty.None;
@@ -212,7 +223,6 @@ namespace WorldServer.Game.Packets.PacketHandler
                 session.Character.Group.ChangeGroupLeader(newLeader.Character.Guid);
 
             session.Character.Group.Update();
-            //GroupUpdate(session.Character.Group);
         }
 
         [Opcode(ClientMessage.GroupLootUpdate, "17538")]
@@ -221,9 +231,6 @@ namespace WorldServer.Game.Packets.PacketHandler
         {
             // unk
             packet.Skip(1); // 7F
-
-            //session.Character.Group.LootMethod = (GroupLootMethod)packet.ReadByte();
-            //session.Character.Group.LootThreshold = (GroupLootThreshold)packet.ReadUInt32();
 
             session.Character.Group.ChangeGroupLootMethod((GroupLootMethod)packet.ReadByte());
             session.Character.Group.ChangeGroupLootThreshold((GroupLootThreshold)packet.ReadUInt32());
@@ -238,15 +245,9 @@ namespace WorldServer.Game.Packets.PacketHandler
             var pChar = WorldMgr.GetSession(GUID);
 
             if (!(pChar == null))
-            {
-                //session.Character.Group.LooterGUID = pChar.Character.Guid;
                 session.Character.Group.ChangeGroupLooterGuid(pChar.Character.Guid);
-            }
             else if (session.Character.Group.LootMethod != GroupLootMethod.MasterLoot)
-            {
-                session.Character.Group.LooterGUID = 0;
                 session.Character.Group.ChangeGroupLooterGuid(0);
-            }
 
             session.Character.Group.Update();
         }
@@ -265,7 +266,7 @@ namespace WorldServer.Game.Packets.PacketHandler
                 new byte[] { 0, 2, 3, 7, 1, 4, 5, 6 },
                 new byte[] { 2, 6, 4, 3, 5, 7, 1, 0 });
 
-            //session.Character.Group.change
+            //session.Character.Group.ChangeGroupMemberRole()
 
             session.Character.Group.Update();
         }
@@ -274,9 +275,7 @@ namespace WorldServer.Game.Packets.PacketHandler
         public static void HandleGroupLeave(
             ref PacketReader packet, WorldClass session)
         {
-
             session.Character.Group.Uninvite(session.Character.Guid);
-            //GroupLeave(ref session);
         }
 
         [Opcode(ClientMessage.GroupMemberRole, "17538")]
@@ -294,9 +293,7 @@ namespace WorldServer.Game.Packets.PacketHandler
                 new byte[] { 4, 6, 2, 5, 3, 7, 0, 1 });
 
             session.Character.Group.ChangeGroupMemberRole(GUID, groupRole);
-
             session.Character.Group.Update();
-
         }
 
         [Opcode(ClientMessage.GroupInviteResponse, "17538")]

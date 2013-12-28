@@ -104,10 +104,10 @@ namespace Framework.Constants.NetMessage
         GroupLootUpdate                 = 0x15E9,
         GroupConvert                    = 0x0469,
         GroupResetInstances             = 0x0049,
-        GroupChangeDungeonDifficulty    = 0x0C69,
+        GroupDungeonDifficulty          = 0x0C69,
         GroupPromoteAssist              = 0x00EC,
-        GroupMoveRaidMember             = 0x05C5,
-        GroupChangeRaidDifficulty       = 0x04B3,
+        GroupRaidMemberGroup            = 0x05C5,
+        GroupRaidDifficulty             = 0x04B3,
         GroupUninvite                   = 0x0168,
         #endregion
 
