@@ -213,10 +213,11 @@ namespace WorldServer.Game.Managers
             BitPack BitPack = new BitPack(accountDataTimes);
 
             accountDataTimes.WriteUnixTime();
-            accountDataTimes.WriteUInt32((uint)mask);
 
             for (int i = 0; i < 8; i++)
                 accountDataTimes.WriteUInt32(0);
+
+            accountDataTimes.WriteUInt32((uint)mask);
 
             BitPack.Write(0);
             BitPack.Flush();
@@ -239,52 +240,61 @@ namespace WorldServer.Game.Managers
             ObjectMovementValues values = new ObjectMovementValues(updateFlags);
             BitPack BitPack = new BitPack(packet, wObject.Guid);
 
-            BitPack.Write(0);
-            BitPack.Write(0);
-            BitPack.Write(0);
-            BitPack.Write(0);
-            BitPack.Write(0);
+            BitPack.Write(values.IsVehicle);
             BitPack.Write(values.IsSelf);
             BitPack.Write(0);
+            BitPack.Write(values.IsTransport);
+            BitPack.Write(0);
+            BitPack.Write(0);
             BitPack.Write(values.HasTarget);
-            BitPack.Write(0, 22);
-            BitPack.Write(0);
-            BitPack.Write(0);
-            BitPack.Write(0);
-            BitPack.Write(0);
             BitPack.Write(values.HasStationaryPosition);
+            BitPack.Write(values.IsAreaTrigger);
             BitPack.Write(0);
+            BitPack.Write(values.IsSceneObject);
+            BitPack.Write(0);
+            BitPack.Write(0);
+            BitPack.Write(0, 22);
             BitPack.Write(values.IsAlive);
-            BitPack.Write(values.HasAnimKits);
-            BitPack.Write(values.IsVehicle);
             BitPack.Write(values.HasGoTransportPosition);
             BitPack.Write(0);
             BitPack.Write(wObject is GameObjectSpawn);
+            BitPack.Write(0);
+            BitPack.Write(0);
+            BitPack.Write(values.HasAnimKits);
 
             if (values.IsAlive)
             {
-                BitPack.WriteGuidMask(4, 1);
-                BitPack.Write(0, 19);
                 BitPack.WriteGuidMask(5);
-                BitPack.Write(!values.HasRotation);
-                BitPack.WriteGuidMask(7);
-                BitPack.Write(0, 22);
                 BitPack.Write(0);
-                BitPack.Write(1);
-                BitPack.Write(1);
-                BitPack.WriteGuidMask(3);
-                BitPack.Write(0);
-                BitPack.Write(1);
-                BitPack.Write(0);
-                BitPack.Write(0); 
-                BitPack.WriteGuidMask(2);
-                BitPack.Write(0);
-                BitPack.WriteGuidMask(0);
-                BitPack.Write(values.IsTransport);
+                BitPack.Write(1);           // !Spline elevation
                 BitPack.WriteGuidMask(6);
                 BitPack.Write(0);
+                BitPack.Write(0, 19);
+                BitPack.WriteGuidMask(4);
+                BitPack.Write(!values.HasRotation);
+                BitPack.Write(!values.HasMovementFlags2);
                 BitPack.Write(1);
-                BitPack.Write(1);
+                BitPack.WriteGuidMask(2, 3, 7);
+                BitPack.Write(0, 22);
+                BitPack.Write(!values.HasMovementFlags);
+                BitPack.Write(0);           // !Time
+                BitPack.Write(1);           // !Pitch
+                BitPack.WriteGuidMask(1);
+                BitPack.Write(values.IsFallingOrJumping);
+                BitPack.Write(0);
+
+                if (values.HasMovementFlags2)
+                    BitPack.Write(values.MovementFlags2, 13);
+
+                BitPack.WriteGuidMask(0);
+                BitPack.Write(0);           // Spline
+                BitPack.Write(values.IsTransport);
+
+                if (values.HasMovementFlags)
+                    BitPack.Write(values.MovementFlags, 30);
+
+                if (values.IsFallingOrJumping)
+                    BitPack.Write(values.HasJumpData);
             }
 
             BitPack.Flush();
@@ -292,26 +302,39 @@ namespace WorldServer.Game.Managers
             if (values.IsAlive)
             {
                 packet.WriteFloat(wObject.Position.Y);
-                packet.WriteFloat(MovementSpeed.FlySpeed);
-                packet.WriteFloat(MovementSpeed.RunSpeed);
-                BitPack.WriteGuidBytes(4);
-                packet.WriteFloat(MovementSpeed.WalkSpeed);
-                BitPack.WriteGuidBytes(5);
-                packet.WriteUInt32(0);
-                BitPack.WriteGuidBytes(1);
-                packet.WriteFloat(MovementSpeed.SwimBackSpeed);
-                packet.WriteFloat(MovementSpeed.FlyBackSpeed);
-                BitPack.WriteGuidBytes(6);
+                BitPack.WriteGuidBytes(7, 1);
+
+                if (values.IsFallingOrJumping)
+                {
+                    packet.WriteUInt32(values.FallTime);
+
+                    if (values.HasJumpData)
+                    {
+                        packet.WriteFloat(values.Sin);
+                        packet.WriteFloat(values.Cos);
+                        packet.WriteFloat(values.CurrentSpeed);
+                    }
+
+                    packet.WriteFloat(values.JumpVelocity);
+                }
+
                 packet.WriteFloat(MovementSpeed.TurnSpeed);
-                packet.WriteFloat(wObject.Position.X);
-                packet.WriteFloat(wObject.Position.O);
-                packet.WriteFloat(MovementSpeed.PitchSpeed);
-                packet.WriteFloat(MovementSpeed.SwimSpeed);
-                BitPack.WriteGuidBytes(3);
+                packet.WriteFloat(MovementSpeed.FlyBackSpeed);
                 packet.WriteFloat(MovementSpeed.RunBackSpeed);
-                BitPack.WriteGuidBytes(7, 2);
+                packet.WritePackedTime();
+                packet.WriteFloat(wObject.Position.X);
+                BitPack.WriteGuidBytes(2);
+                packet.WriteFloat(MovementSpeed.SwimSpeed);
+                packet.WriteFloat(MovementSpeed.SwimBackSpeed);
+                packet.WriteFloat(wObject.Position.O);
+                packet.WriteFloat(MovementSpeed.FlySpeed);
+                BitPack.WriteGuidBytes(6);
+                packet.WriteFloat(MovementSpeed.RunSpeed);
+                packet.WriteFloat(MovementSpeed.PitchSpeed);
+                BitPack.WriteGuidBytes(0, 5, 4);
+                packet.WriteFloat(MovementSpeed.WalkSpeed);
                 packet.WriteFloat(wObject.Position.Z);
-                BitPack.WriteGuidBytes(0);
+                BitPack.WriteGuidBytes(3);
             }
 
             if (values.HasStationaryPosition)

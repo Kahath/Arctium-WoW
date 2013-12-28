@@ -69,22 +69,22 @@ namespace WorldServer.Game.Packets.PacketHandler
             PacketWriter destroyObject = new PacketWriter(ServerMessage.DestroyObject);
             BitPack BitPack = new BitPack(destroyObject, guid);
 
-            BitPack.WriteGuidMask(7, 2, 6, 3, 1, 4);
+            BitPack.WriteGuidMask(5, 6, 1, 7, 2, 0, 3);
             BitPack.Write(animation);
-            BitPack.WriteGuidMask(5, 0);
+            BitPack.WriteGuidMask(4);
 
             BitPack.Flush();
 
-            BitPack.WriteGuidBytes(4, 3, 2, 7, 0, 1, 6, 5);
+            BitPack.WriteGuidBytes(1, 5, 3, 0, 2, 6, 7, 4);
 
             return destroyObject;
         }
 
-        [Opcode(ClientMessage.ObjectUpdateFailed, "17538")]
+        [Opcode(ClientMessage.ObjectUpdateFailed, "17658")]
         public static void HandleObjectUpdateFailed(ref PacketReader packet, WorldClass session)
         {
-            byte[] guidMask = { 7, 0, 2, 3, 1, 4, 6, 5 };
-            byte[] guidBytes = { 1, 2, 5, 0, 3, 4, 6, 7 };
+            byte[] guidMask = { 5, 6, 4, 3, 7, 1, 2, 0 };
+            byte[] guidBytes = {6, 3, 0, 7, 1, 4, 2, 5 };
 
             BitUnpack GuidUnpacker = new BitUnpack(packet);
 
